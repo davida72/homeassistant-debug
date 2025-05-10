@@ -12,7 +12,7 @@
                 "--skip-pip"
             ],
             "console": "integratedTerminal",
-            "justMyCode": false,
+            "justMyCode": true,
             "cwd": "${workspaceFolder}"
         }
     ]

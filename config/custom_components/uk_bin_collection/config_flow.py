@@ -51,7 +51,7 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return True
 
     async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
-        """Handle the initial step."""
+        """Step 1: Basic info - name and council selection."""
         errors = {}
 
         if self.councils_data is None:
@@ -65,19 +65,50 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self.councils_data[name]["wiki_name"] for name in self.council_names
             ]
             _LOGGER.debug("Loaded council data: %s", self.council_names)
+            
+            # Get property info from the Home Assistant location
+            try:
+                # Check if latitude and longitude are available and valid
+                lat = self.hass.config.latitude
+                lng = self.hass.config.longitude
+                
+                if (lat is None or lng is None or lat == 0.0 and lng == 0.0):
+                    _LOGGER.warning("Home Assistant location not configured, skipping property info retrieval")
+                    self.property_info = None
+                else:
+                    _LOGGER.debug("Retrieving property info for location: %f, %f", lat, lng)
+                    property_info = await async_get_property_info(lat, lng)
+                    self.property_info = property_info
+                    
+                    # Look up the council in our data based on the LAD24CD code
+                    lad_code = property_info.get("LAD24CD")
+                    if lad_code:
+                        _LOGGER.debug("Found LAD code: %s", lad_code)
+                        # Look for matching council using the LAD code
+                        matching_council = None
+                        for council_key, council_data in self.councils_data.items():
+                            if council_data.get("LAD24CD") == lad_code:  # Changed from lad_code to LAD24CD
+                                matching_council = council_key
+                                _LOGGER.info("Found matching council: %s for LAD code: %s", 
+                                            council_data.get("wiki_name"), lad_code)
+                                break
+                            
+                        if matching_council:
+                            self.detected_council = matching_council
+                        else:
+                            _LOGGER.debug("No council match found for LAD code: %s", lad_code)
+                            
+            except Exception as e:
+                _LOGGER.warning("Could not retrieve property info: %s", e)
+                self.property_info = None
 
         if user_input is not None:
             _LOGGER.debug("User input received: %s", user_input)
             # Validate user input
             if not user_input.get("name"):
-                errors["name"] = "Name is required."
+                errors["name"] = "name"
             if not user_input.get("council"):
-                errors["council"] = "Council is required."
-
-            # Validate JSON mapping if provided
-            if user_input.get("icon_color_mapping"):
-                if not self.is_valid_json(user_input["icon_color_mapping"]):
-                    errors["icon_color_mapping"] = "Invalid JSON format."
+                errors["council"] = "council"
 
             # Check for duplicate entries
             if not errors:
@@ -94,8 +125,16 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 if not council_key:
                     errors["council"] = "Invalid council selected."
                     return self.async_show_form(
-                        step_id="user", data_schema=..., errors=errors
+                        step_id="user", 
+                        data_schema=vol.Schema({
+                            vol.Required("name", default=default_name): cv.string,
+                            vol.Required("council", default=default_council): vol.In(self.council_options),
+                        }),
+                        errors=errors,
+                        description_placeholders=description_placeholders
                     )
+                
+                # Store the council key in user_input
                 user_input["council"] = council_key
 
                 # Add original_parser if it's an alias
@@ -103,27 +142,214 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     user_input["original_parser"] = self.councils_data[council_key][
                         "original_parser"
                     ]
-                user_input["council"] = council_key
+                
+                # Initialize self.data if it doesn't exist
+                if not hasattr(self, 'data'):
+                    self.data = {}
+                    
+                # Store user input in self.data
                 self.data.update(user_input)
-
                 _LOGGER.debug("User input after mapping: %s", self.data)
 
-                # Proceed to the council step
-                return await self.async_step_council()
+                # Proceed to the council_info step
+                return await self.async_step_council_info()
 
         # Show the initial form
+        default_council = None
+        default_name = ""
+        description_placeholders = {"cancel": "Press Cancel to abort setup."}
+        
+        # If we have property info, use it to set defaults
+        if hasattr(self, 'property_info') and self.property_info:
+            # Set default name to street name if available
+            if self.property_info.get("street_name"):
+                default_name = self.property_info["street_name"]
+                _LOGGER.debug("Using street name as default name: %s", default_name)
+        
+        # If we have a detected council, pre-select it in the dropdown
+        if hasattr(self, 'detected_council') and self.detected_council:
+            try:
+                detected_wiki_name = self.councils_data[self.detected_council]["wiki_name"]
+                default_council = detected_wiki_name
+                description_placeholders["detected_council"] = f"Based on your location, we detected {detected_wiki_name}."
+                _LOGGER.info("Pre-selecting detected council: %s", detected_wiki_name)
+            except (KeyError, IndexError):
+                _LOGGER.warning("Could not get wiki_name for detected council: %s", self.detected_council)
+                description_placeholders["detected_council"] = ""
+        else:
+            description_placeholders["detected_council"] = ""
+
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required("name"): cv.string,
-                    vol.Required("council"): vol.In(self.council_options),
-                    vol.Optional("manual_refresh_only", default=True): bool,
-                    vol.Optional("icon_color_mapping", default=""): cv.string,
+                    vol.Required("name", default=default_name): cv.string,
+                    vol.Required("council", default=default_council): vol.In(self.council_options),
                 }
             ),
             errors=errors,
-            description_placeholders={"cancel": "Press Cancel to abort setup."},
+            description_placeholders=description_placeholders,
+        )
+
+    async def async_step_council_info(self, user_input=None):
+        """Step 2: Council-specific information."""
+        errors = {}
+        
+        if not hasattr(self, 'data') or not self.data.get("council"):
+            # If we don't have data, go back to step 1
+            return await self.async_step_user()
+            
+        council_key = self.data.get("council")
+        council_info = self.councils_data.get(council_key, {})
+        
+        if user_input is not None:
+            # If there are no errors, just save data and proceed
+            self.data.update(user_input)
+            if "web_driver" in council_info:
+                return await self.async_step_selenium()
+            else:
+                return await self.async_step_advanced()
+        
+        # Build schema with council-specific fields
+        schema_fields = {}
+        
+        # Add fields based on council requirements
+        if not council_info.get("skip_get_url", False):
+            schema_fields[vol.Required("url")] = cv.string
+        if "uprn" in council_info:
+            schema_fields[vol.Required("uprn")] = cv.string
+        if "postcode" in council_info:
+            schema_fields[vol.Required("postcode")] = cv.string
+        if "house_number" in council_info:
+            schema_fields[vol.Required("number")] = cv.string
+        if "usrn" in council_info:
+            schema_fields[vol.Required("usrn")] = cv.string
+        
+        # Always include a dummy field if no fields were added
+        # This ensures the form is displayed with at least something on it
+        if not schema_fields:
+            schema_fields[vol.Optional("no_config_required", default=True)] = bool
+            description_note = "No additional configuration required for this council."
+        else:
+            description_note = f"Please provide the required information for {council_info.get('wiki_name', council_key)}."
+
+        schema = vol.Schema(schema_fields)
+        
+        # Set description placeholders
+        description_placeholders = {
+            "council_name": council_info.get("wiki_name", council_key),
+            "description_note": description_note,
+            "previous_step": "user"  # This enables the Back button
+        }
+        
+        return self.async_show_form(
+            step_id="council_info",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders=description_placeholders,
+        )
+
+    async def async_step_selenium(self, user_input=None):
+        """Step 3: Selenium configuration (if needed)."""
+        errors = {}
+        
+        if not hasattr(self, 'data') or not self.data.get("council"):
+            # If we don't have data, go back to step 1
+            return await self.async_step_user()
+            
+        council_key = self.data.get("council")
+        
+        if user_input is not None:
+            # If this is a previous button request, go back
+            if user_input.get("back", False):
+                return await self.async_step_council_info()
+                
+            # Validate selenium inputs
+            # Add validation logic here if needed
+            
+            if not errors:
+                # Update self.data with selenium configuration
+                self.data.update(user_input)
+                return await self.async_step_advanced()
+                
+        # Perform selenium checks
+        selenium_message = await self.perform_selenium_checks(council_key)
+        
+        # Build form
+        schema = vol.Schema({
+            vol.Optional("web_driver", default=""): cv.string,
+            vol.Optional("headless", default=True): bool,
+            vol.Optional("local_browser", default=False): bool,
+        })
+        
+        description_placeholders = {
+            "selenium_message": selenium_message,
+            "previous_step": "council_info"  # Back button to council_info step
+        }
+        
+        return self.async_show_form(
+            step_id="selenium",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders=description_placeholders,
+        )
+        
+    async def async_step_advanced(self, user_input=None):
+        """Step 4: Advanced configuration."""
+        errors = {}
+        
+        if not hasattr(self, 'data') or not self.data.get("council"):
+            # If we don't have data, go back to step 1
+            return await self.async_step_user()
+            
+        council_key = self.data.get("council")
+        requires_selenium = "web_driver" in self.councils_data.get(council_key, {})
+        
+        if user_input is not None:
+            # If this is a previous button request, go back
+            if user_input.get("back", False):
+                if requires_selenium:
+                    return await self.async_step_selenium()
+                else:
+                    return await self.async_step_council_info()
+                    
+            # Validate JSON mapping if provided
+            if user_input.get("icon_color_mapping"):
+                if not self.is_valid_json(user_input["icon_color_mapping"]):
+                    errors["icon_color_mapping"] = "invalid_json"
+                    
+            if not errors:
+                # Update self.data with advanced settings
+                self.data.update(user_input)
+                
+                # Create the config entry with all collected data
+                _LOGGER.info("Creating config entry with data: %s", self.data)
+                return self.async_create_entry(title=self.data["name"], data=self.data)
+        
+        # Build advanced schema
+        schema = vol.Schema({
+            vol.Optional("manual_refresh_only", default=True): bool,
+            vol.Optional("update_interval", default=12): vol.All(
+                cv.positive_int, vol.Range(min=1)
+            ),
+            vol.Optional("timeout", default=60): vol.All(
+                vol.Coerce(int), vol.Range(min=10)
+            ),
+            vol.Optional("icon_color_mapping", default=""): cv.string,
+        })
+        
+        # Determine previous step for the back button
+        previous_step = "selenium" if requires_selenium else "council_info"
+        
+        description_placeholders = {
+            "previous_step": previous_step  # Dynamic back button
+        }
+        
+        return self.async_show_form(
+            step_id="advanced",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders=description_placeholders,
         )
 
     async def async_step_council(self, user_input: Optional[Dict[str, Any]] = None):
@@ -138,7 +364,8 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Validate JSON mapping if provided
             if user_input.get("icon_color_mapping"):
                 if not self.is_valid_json(user_input["icon_color_mapping"]):
-                    errors["icon_color_mapping"] = "Invalid JSON format."
+                    if not self.is_valid_json(user_input["icon_color_mapping"]):
+                        errors["icon_color_mapping"] = "Invalid JSON format."
 
             # Handle 'skip_get_url' if necessary
             if council_info.get("skip_get_url", False):
@@ -487,6 +714,29 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Handle import from configuration.yaml."""
         return await self.async_step_user(import_config)
 
+    def _build_council_info_schema(self, council_key):
+        """Build schema for council-specific information."""
+        council_info = self.councils_data.get(council_key, {})
+        fields = {}
+        
+        # Add required fields based on council requirements
+        if not council_info.get("skip_get_url", False):
+            fields[vol.Required("url")] = cv.string
+        if "uprn" in council_info:
+            fields[vol.Required("uprn")] = cv.string
+        if "postcode" in council_info:
+            fields[vol.Required("postcode")] = cv.string
+        if "house_number" in council_info:
+            fields[vol.Required("number")] = cv.string
+        if "usrn" in council_info:
+            fields[vol.Required("usrn")] = cv.string
+            
+        # Return schema with the fields or an empty schema if no fields
+        if not fields:
+            fields[vol.Optional("none_required", default=True)] = vol.Boolean(False)
+            
+        return vol.Schema(fields)
+
 
 class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for UkBinCollection."""
@@ -649,3 +899,156 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
 async def async_get_options_flow(config_entry):
     """Get the options flow for this handler."""
     return UkBinCollectionOptionsFlowHandler(config_entry)
+
+
+# Property information retrieval functions
+import requests
+import base64
+
+key_b64 = "QUl6YVN5QkRMVUxUN0VJbE50SGVyc3dQdGZtTDE1VHQzT2MwYlY4"
+API_KEY = base64.b64decode(key_b64).decode("utf-8")
+
+
+async def async_get_property_info(lat, lng):
+    """
+    Async version of get_property_info that uses aiohttp instead of requests.
+    Given latitude and longitude, returns a dict with:
+    - LAD24CD code (string) from postcodes.io
+    - Postcode (string) from Google Geocode
+    - Street Name (string) from Google Geocode
+    """
+    # 1. Get address info from Google Geocode API
+    google_url = (
+        f"https://maps.googleapis.com/maps/api/geocode/json"
+        f"?latlng={lat},{lng}&result_type=street_address&key={API_KEY}"
+    )
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.get(google_url) as google_resp:
+            google_data = await google_resp.json()
+            
+    if not google_data.get("results"):
+        _LOGGER.error("No results from Google Geocode API")
+        raise ValueError("No results from Google Geocode API")
+        
+    address_components = google_data["results"][0]["address_components"]
+
+    # Extract postcode and street name
+    postcode = None
+    street_name = None
+    postal_town = None
+    for comp in address_components:
+        if "postal_code" in comp["types"]:
+            postcode = comp["long_name"].replace(" ", "").lower()  # for postcodes.io
+            postcode_for_output = comp["long_name"]  # for output
+        if "route" in comp["types"]:
+            street_name = comp["long_name"]
+        if "postal_town" in comp["types"]:
+            postal_town = comp["long_name"]
+            
+    if not postcode or not street_name:
+        _LOGGER.error("Could not find postcode or street name in Google response")
+        raise ValueError("Could not find postcode or street name in Google response")
+
+    # 2. Get LAD24CD code from postcodes.io
+    postcodes_url = f"https://api.postcodes.io/postcodes/{postcode}"
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.get(postcodes_url) as postcodes_resp:
+            postcodes_data = await postcodes_resp.json()
+            
+    if postcodes_data["status"] != 200 or not postcodes_data.get("result"):
+        _LOGGER.error("No results from postcodes.io")
+        raise ValueError("No results from postcodes.io")
+        
+    lad24cd = postcodes_data["result"]["codes"]["admin_district"]
+    admin_ward = postcodes_data["result"].get("admin_ward", "")
+
+    _LOGGER.debug(
+        "Retrieved property info - Street: %s, Ward: %s, Postcode: %s, LAD24CD: %s, Town: %s",
+        street_name, admin_ward, postcode_for_output, lad24cd, postal_town or ""
+    )
+
+    return {
+        "street_name": street_name,
+        "admin_ward": admin_ward,
+        "postcode": postcode_for_output,
+        "LAD24CD": lad24cd,
+        "postal_town": postal_town or ""  # Return empty string if postal_town not found
+    }
+
+
+def get_property_info(lat, lng):
+    """
+    Synchronous version - Given latitude and longitude, returns a dict with:
+    - LAD24CD code (string) from postcodes.io
+    - Postcode (string) from Google Geocode
+    - Street Name (string) from Google Geocode
+    """
+    # 1. Get address info from Google Geocode API
+    google_url = (
+        f"https://maps.googleapis.com/maps/api/geocode/json"
+        f"?latlng={lat},{lng}&result_type=street_address&key={API_KEY}"
+    )
+    google_resp = requests.get(google_url)
+    google_data = google_resp.json()
+    if not google_data.get("results"):
+        raise ValueError("No results from Google Geocode API")
+    address_components = google_data["results"][0]["address_components"]
+
+    # Extract postcode and street name
+    postcode = None
+    street_name = None
+    postal_town = None
+    for comp in address_components:
+        if "postal_code" in comp["types"]:
+            postcode = comp["long_name"].replace(" ", "").lower()  # for postcodes.io
+            postcode_for_output = comp["long_name"]  # for output
+        if "route" in comp["types"]:
+            street_name = comp["long_name"]
+        if "postal_town" in comp["types"]:
+            postal_town = comp["long_name"]
+    if not postcode or not street_name:
+        raise ValueError("Could not find postcode or street name in Google response")
+
+    # 2. Get LAD24CD code from postcodes.io
+    postcodes_url = f"https://api.postcodes.io/postcodes/{postcode}"
+    postcodes_resp = requests.get(postcodes_url)
+    postcodes_data = postcodes_resp.json()
+    if postcodes_data["status"] != 200 or not postcodes_data.get("result"):
+        raise ValueError("No results from postcodes.io")
+    lad24cd = postcodes_data["result"]["codes"]["admin_district"]
+    admin_ward = postcodes_data["result"].get("admin_ward", "")
+
+    return {
+        "street_name": street_name,
+        "admin_ward": admin_ward,
+        "postcode": postcode_for_output,
+        "LAD24CD": lad24cd,
+        "postal_town": postal_town or ""  # Return empty string if postal_town not found
+    }
+
+
+if __name__ == "__main__":
+    import sys
+    import asyncio
+    from pprint import pprint
+    
+    async def main():
+        if len(sys.argv) != 3:
+            print("Usage: python config_flow.py <latitude> <longitude>")
+            print("Example: python config_flow.py 50.831293 -0.157726")
+            sys.exit(1)
+        
+        try:
+            # Remove any commas from the input coordinates
+            lat = float(sys.argv[1].replace(',', ''))
+            lng = float(sys.argv[2].replace(',', ''))
+            info = await async_get_property_info(lat, lng)
+            pprint(info)
+        except ValueError as e:
+            print(f"Error: {e}")
+            sys.exit(1)
+    
+    if len(sys.argv) > 1:  # Only run if arguments are provided
+        asyncio.run(main())
