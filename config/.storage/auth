@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "auth",
+  "data": {
+    "users": [
+      {
+        "id": "c94451e5dab9428cb9a7f42d32f54d2f",
+        "group_ids": [
+          "system-read-only"
+        ],
+        "is_owner": false,
+        "is_active": true,
+        "name": "Home Assistant Content",
+        "system_generated": true,
+        "local_only": false
+      },
+      {
+        "id": "6416eb7ff184496497b10d43c85efa09",
+        "group_ids": [
+          "system-admin"
+        ],
+        "is_owner": false,
+        "is_active": true,
+        "name": "Home Assistant Cast",
+        "system_generated": true,
+        "local_only": false
+      },
+      {
+        "id": "3d0b4e41917a48ccb9a9637141d93199",
+        "group_ids": [
+          "system-admin"
+        ],
+        "is_owner": true,
+        "is_active": true,
+        "name": "damor",
+        "system_generated": false,
+        "local_only": false
+      }
+    ],
+    "groups": [
+      {
+        "id": "system-admin",
+        "name": "Administrators"
+      },
+      {
+        "id": "system-users",
+        "name": "Users"
+      },
+      {
+        "id": "system-read-only",
+        "name": "Read Only"
+      }
+    ],
+    "credentials": [
+      {
+        "id": "cac4d7bdf5304d0fb6941e8d4b54ed39",
+        "user_id": "3d0b4e41917a48ccb9a9637141d93199",
+        "auth_provider_type": "homeassistant",
+        "auth_provider_id": null,
+        "data": {
+          "username": "damor"
+        }
+      }
+    ],
+    "refresh_tokens": [
+      {
+        "id": "91a2274bc5f948f785a6277ddab43a5d",
+        "user_id": "c94451e5dab9428cb9a7f42d32f54d2f",
+        "client_id": null,
+        "client_name": null,
+        "client_icon": null,
+        "token_type": "system",
+        "created_at": "2025-05-09T22:12:51.220475+00:00",
+        "access_token_expiration": 1800.0,
+        "token": "504258a455baf08649acf206774b294b37102b828db277659a758c10a7a5e1b29810409821344f78aef97110ce045085b96bd764262800b25928259c556adcb6",
+        "jwt_key": "7fb611f335fbf35e7d4b1a03badcce8ac7823f8274935a2762b23af09a58a0f4fc5981b0ff59abbf8e3e73223fb4f83767d3e450f2203ac5e931cc0b46f87b18",
+        "last_used_at": null,
+        "last_used_ip": null,
+        "expire_at": null,
+        "credential_id": null,
+        "version": "2025.5.1"
+      },
+      {
+        "id": "ef620e0740f84426988242f87fc8d288",
+        "user_id": "6416eb7ff184496497b10d43c85efa09",
+        "client_id": null,
+        "client_name": null,
+        "client_icon": null,
+        "token_type": "system",
+        "created_at": "2025-05-09T22:12:52.087096+00:00",
+        "access_token_expiration": 1800.0,
+        "token": "13fc0a8d6e47c55541fbd1d9191a5152e22ba91a8b4eb398145622c8f05f5c39d2e33698f0a2cc01a687360c8f0ca2e801ee2fcec851a55db14f026b0468e791",
+        "jwt_key": "8b925ca3f783e47d16da6ae6ef4eb066ff44a124c211ae18afb195a1e1b55aed5d298b58de824d0013c0ff6934f3181134ee9ac6aa52a9ef0588366ca13c9d88",
+        "last_used_at": null,
+        "last_used_ip": null,
+        "expire_at": null,
+        "credential_id": null,
+        "version": "2025.5.1"
+      },
+      {
+        "id": "680671deba41439e9981cecb96e0a0fe",
+        "user_id": "3d0b4e41917a48ccb9a9637141d93199",
+        "client_id": "http://localhost:8123/",
+        "client_name": null,
+        "client_icon": null,
+        "token_type": "normal",
+        "created_at": "2025-05-09T22:14:41.674131+00:00",
+        "access_token_expiration": 1800.0,
+        "token": "062f7ad4452f17b15be2a63b600fa3eca8149d5f40226f327e9af121b998ee34ed44c36bed4192e0c3a4f2d5049a9f405573b0928897679e4b3affbd110d98e2",
+        "jwt_key": "a74c317547f10b5f28068389e719b2ba5db08907d4ded0710fb2ae1bda4f9c2de42a5d2dcd9c59cb28570aa5fe7754903f0634d09f5a48a9045db4d63da5c71b",
+        "last_used_at": "2025-05-09T22:14:41.674165+00:00",
+        "last_used_ip": "::1",
+        "expire_at": 1754604881.674165,
+        "credential_id": "cac4d7bdf5304d0fb6941e8d4b54ed39",
+        "version": "2025.5.1"
+      }
+    ]
+  }
+}

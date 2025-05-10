@@ -1,0 +1,14 @@
+# Basic Home Assistant config
+default_config:
+
+# Enable debugging logs for your component
+logger:
+  default: info
+  logs:
+    custom_components.uk_bin_collection: debug
+
+# Your component configuration (adjust as needed)
+uk_bin_collection:
+  # Add your component's required configuration here
+  # For example (replace with your actual config):
+  # your_config_key: "value"

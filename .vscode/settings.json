@@ -1,0 +1,5 @@
+{
+    "python.defaultInterpreterPath": "/Users/davidamor/GitHub/homeassistant-debug/.venv/bin/python",
+    "python.languageServer": "Pylance",
+    "python.linting.enabled": true
+}
