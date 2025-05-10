@@ -194,14 +194,14 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_council_info(self, user_input=None):
         """Step 2: Council-specific information."""
         errors = {}
-        
-        if not hasattr(self, 'data') or not self.data.get("council"):
-            # If we don't have data, go back to step 1
-            return await self.async_step_user()
-            
+                    
         council_key = self.data.get("council")
         council_info = self.councils_data.get(council_key, {})
         
+        # Get wiki info if available - use consistent variable name
+        wiki_note = council_info.get("wiki_note", "")
+        _LOGGER.info("Wiki note for %s: '%s'", council_key, wiki_note)  # Log the actual value
+
         if user_input is not None:
             # If there are no errors, just save data and proceed
             self.data.update(user_input)
@@ -213,13 +213,24 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # Build schema with council-specific fields
         schema_fields = {}
         
+        # Set default values
+        default_values = {}
+        
+        # If we have property info, use it to set defaults
+        if hasattr(self, 'property_info') and self.property_info:
+            # Set default postcode if available and required by council
+            if "postcode" in council_info and self.property_info.get("postcode"):
+                default_values["postcode"] = self.property_info["postcode"]
+                _LOGGER.debug("Using property postcode as default: %s", default_values["postcode"])
+        
         # Add fields based on council requirements
         if not council_info.get("skip_get_url", False):
             schema_fields[vol.Required("url")] = cv.string
         if "uprn" in council_info:
             schema_fields[vol.Required("uprn")] = cv.string
         if "postcode" in council_info:
-            schema_fields[vol.Required("postcode")] = cv.string
+            default_postcode = default_values.get("postcode", "")
+            schema_fields[vol.Required("postcode", default=default_postcode)] = cv.string
         if "house_number" in council_info:
             schema_fields[vol.Required("number")] = cv.string
         if "usrn" in council_info:
@@ -233,13 +244,16 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         else:
             description_note = f"Please provide the required information for {council_info.get('wiki_name', council_key)}."
 
+        # Add wiki note to description if available
+        if wiki_note: 
+            description_note = wiki_note
+
         schema = vol.Schema(schema_fields)
         
         # Set description placeholders
         description_placeholders = {
             "council_name": council_info.get("wiki_name", council_key),
             "description_note": description_note,
-            "previous_step": "user"  # This enables the Back button
         }
         
         return self.async_show_form(
@@ -252,17 +266,10 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_selenium(self, user_input=None):
         """Step 3: Selenium configuration (if needed)."""
         errors = {}
-        
-        if not hasattr(self, 'data') or not self.data.get("council"):
-            # If we don't have data, go back to step 1
-            return await self.async_step_user()
             
         council_key = self.data.get("council")
         
         if user_input is not None:
-            # If this is a previous button request, go back
-            if user_input.get("back", False):
-                return await self.async_step_council_info()
                 
             # Validate selenium inputs
             # Add validation logic here if needed
@@ -284,7 +291,6 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         
         description_placeholders = {
             "selenium_message": selenium_message,
-            "previous_step": "council_info"  # Back button to council_info step
         }
         
         return self.async_show_form(
@@ -297,10 +303,6 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_advanced(self, user_input=None):
         """Step 4: Advanced configuration."""
         errors = {}
-        
-        if not hasattr(self, 'data') or not self.data.get("council"):
-            # If we don't have data, go back to step 1
-            return await self.async_step_user()
             
         council_key = self.data.get("council")
         requires_selenium = "web_driver" in self.councils_data.get(council_key, {})
@@ -336,14 +338,7 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Coerce(int), vol.Range(min=10)
             ),
             vol.Optional("icon_color_mapping", default=""): cv.string,
-        })
-        
-        # Determine previous step for the back button
-        previous_step = "selenium" if requires_selenium else "council_info"
-        
-        description_placeholders = {
-            "previous_step": previous_step  # Dynamic back button
-        }
+        })        
         
         return self.async_show_form(
             step_id="advanced",
@@ -976,58 +971,6 @@ async def async_get_property_info(lat, lng):
         "LAD24CD": lad24cd,
         "postal_town": postal_town or ""  # Return empty string if postal_town not found
     }
-
-
-def get_property_info(lat, lng):
-    """
-    Synchronous version - Given latitude and longitude, returns a dict with:
-    - LAD24CD code (string) from postcodes.io
-    - Postcode (string) from Google Geocode
-    - Street Name (string) from Google Geocode
-    """
-    # 1. Get address info from Google Geocode API
-    google_url = (
-        f"https://maps.googleapis.com/maps/api/geocode/json"
-        f"?latlng={lat},{lng}&result_type=street_address&key={API_KEY}"
-    )
-    google_resp = requests.get(google_url)
-    google_data = google_resp.json()
-    if not google_data.get("results"):
-        raise ValueError("No results from Google Geocode API")
-    address_components = google_data["results"][0]["address_components"]
-
-    # Extract postcode and street name
-    postcode = None
-    street_name = None
-    postal_town = None
-    for comp in address_components:
-        if "postal_code" in comp["types"]:
-            postcode = comp["long_name"].replace(" ", "").lower()  # for postcodes.io
-            postcode_for_output = comp["long_name"]  # for output
-        if "route" in comp["types"]:
-            street_name = comp["long_name"]
-        if "postal_town" in comp["types"]:
-            postal_town = comp["long_name"]
-    if not postcode or not street_name:
-        raise ValueError("Could not find postcode or street name in Google response")
-
-    # 2. Get LAD24CD code from postcodes.io
-    postcodes_url = f"https://api.postcodes.io/postcodes/{postcode}"
-    postcodes_resp = requests.get(postcodes_url)
-    postcodes_data = postcodes_resp.json()
-    if postcodes_data["status"] != 200 or not postcodes_data.get("result"):
-        raise ValueError("No results from postcodes.io")
-    lad24cd = postcodes_data["result"]["codes"]["admin_district"]
-    admin_ward = postcodes_data["result"].get("admin_ward", "")
-
-    return {
-        "street_name": street_name,
-        "admin_ward": admin_ward,
-        "postcode": postcode_for_output,
-        "LAD24CD": lad24cd,
-        "postal_town": postal_town or ""  # Return empty string if postal_town not found
-    }
-
 
 if __name__ == "__main__":
     import sys

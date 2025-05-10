@@ -1,108 +1,66 @@
-2025-05-10 12:09:22.875 WARNING (MainThread) [homeassistant.bootstrap] Skipping pip installation of required modules. This may cause issues
-2025-05-10 12:09:22.876 WARNING (SyncWorker_0) [homeassistant.loader] We found a custom integration uk_bin_collection which has not been tested by Home Assistant. This component might cause stability problems, be sure to disable it if you experience issues with Home Assistant
-2025-05-10 12:09:23.104 WARNING (MainThread) [aiohttp_fast_zlib] zlib_ng and isal are not available, falling back to zlib, performance will be degraded.
-2025-05-10 12:09:23.112 ERROR (SyncWorker_4) [homeassistant.util.json] Could not parse JSON content: /Users/davidamor/GitHub/homeassistant-debug/config/custom_components/uk_bin_collection/translations/en.json
-Traceback (most recent call last):
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/util/json.py", line 73, in load_json
-    return orjson.loads(fdesc.read())  # type: ignore[no-any-return]
-           ~~~~~~~~~~~~^^^^^^^^^^^^^^
-orjson.JSONDecodeError: trailing comma is not allowed: line 22 column 18 (char 987)
-2025-05-10 12:09:23.115 ERROR (MainThread) [homeassistant] Error doing job: Task exception was never retrieved (None)
-Traceback (most recent call last):
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/util/json.py", line 73, in load_json
-    return orjson.loads(fdesc.read())  # type: ignore[no-any-return]
-           ~~~~~~~~~~~~^^^^^^^^^^^^^^
-orjson.JSONDecodeError: trailing comma is not allowed: line 22 column 18 (char 987)
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/helpers/translation.py", line 420, in async_load_integrations
-    await _async_get_translations_cache(hass).async_load(
-        hass.config.language, integrations
-    )
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/helpers/translation.py", line 179, in async_load
-    await self._async_load(language, components_to_load)
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/helpers/translation.py", line 232, in _async_load
-    translation_by_language_strings = await _async_get_component_strings(
-                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        self.hass, languages, components, integrations
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/helpers/translation.py", line 115, in _async_get_component_strings
-    loaded_translations_by_language = await hass.async_add_executor_job(
-                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        _load_translations_files_by_language, files_to_load_by_language
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/concurrent/futures/thread.py", line 59, in run
-    result = self.fn(*self.args, **self.kwargs)
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/helpers/translation.py", line 59, in _load_translations_files_by_language
-    loaded_json = load_json(translation_file)
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/util/json.py", line 79, in load_json
-    raise HomeAssistantError(f"Error while loading {filename}: {error}") from error
-homeassistant.exceptions.HomeAssistantError: Error while loading /Users/davidamor/GitHub/homeassistant-debug/config/custom_components/uk_bin_collection/translations/en.json: trailing comma is not allowed: line 22 column 18 (char 987)
-2025-05-10 12:09:23.117 INFO (MainThread) [homeassistant.setup] Setup of domain http took 0.01 seconds
-2025-05-10 12:09:23.117 INFO (MainThread) [homeassistant.setup] Setting up websocket_api
-2025-05-10 12:09:23.117 INFO (MainThread) [homeassistant.setup] Setup of domain websocket_api took 0.00 seconds
-2025-05-10 12:09:23.117 INFO (MainThread) [homeassistant.setup] Setting up network
-2025-05-10 12:09:23.118 INFO (MainThread) [homeassistant.setup] Setup of domain system_log took 0.02 seconds
-2025-05-10 12:09:23.119 INFO (MainThread) [homeassistant.setup] Setup of domain network took 0.00 seconds
-2025-05-10 12:09:23.120 INFO (MainThread) [homeassistant.setup] Setup of domain logger took 0.02 seconds
-2025-05-10 12:09:23.121 INFO (MainThread) [homeassistant.bootstrap] Setting up stage frontend: {'frontend'} | set()
-Dependencies: {'api', 'search', 'file_upload', 'repairs', 'onboarding', 'device_automation', 'config', 'auth', 'lovelace', 'diagnostics'} | {'websocket_api', 'http', 'system_log'}
-2025-05-10 12:09:23.121 INFO (MainThread) [homeassistant.setup] Setting up api
-2025-05-10 12:09:23.121 INFO (MainThread) [homeassistant.setup] Setup of domain api took 0.00 seconds
-2025-05-10 12:09:23.121 INFO (MainThread) [homeassistant.setup] Setting up search
-2025-05-10 12:09:23.121 INFO (MainThread) [homeassistant.setup] Setup of domain search took 0.00 seconds
-2025-05-10 12:09:23.121 INFO (MainThread) [homeassistant.setup] Setting up file_upload
-2025-05-10 12:09:23.121 INFO (MainThread) [homeassistant.setup] Setup of domain file_upload took 0.00 seconds
-2025-05-10 12:09:23.121 INFO (MainThread) [homeassistant.setup] Setting up repairs
-2025-05-10 12:09:23.121 INFO (MainThread) [homeassistant.setup] Setup of domain repairs took 0.00 seconds
-2025-05-10 12:09:23.121 INFO (MainThread) [homeassistant.setup] Setting up auth
-2025-05-10 12:09:23.122 INFO (MainThread) [homeassistant.setup] Setting up config
-2025-05-10 12:09:23.122 INFO (MainThread) [homeassistant.setup] Setup of domain config took 0.00 seconds
-2025-05-10 12:09:23.122 INFO (MainThread) [homeassistant.setup] Setting up device_automation
-2025-05-10 12:09:23.122 INFO (MainThread) [homeassistant.setup] Setup of domain device_automation took 0.00 seconds
-2025-05-10 12:09:23.122 INFO (MainThread) [homeassistant.setup] Setting up diagnostics
-2025-05-10 12:09:23.124 INFO (MainThread) [homeassistant.setup] Setup of domain auth took 0.00 seconds
-2025-05-10 12:09:23.125 INFO (MainThread) [homeassistant.setup] Setting up onboarding
-2025-05-10 12:09:23.125 INFO (MainThread) [homeassistant.setup] Setup of domain onboarding took 0.00 seconds
-2025-05-10 12:09:23.125 INFO (MainThread) [homeassistant.setup] Setting up lovelace
-2025-05-10 12:09:23.126 INFO (MainThread) [homeassistant.setup] Setup of domain diagnostics took 0.00 seconds
-2025-05-10 12:09:23.127 INFO (MainThread) [homeassistant.setup] Setup of domain lovelace took 0.00 seconds
-2025-05-10 12:09:23.127 INFO (MainThread) [homeassistant.setup] Setting up frontend
-2025-05-10 12:09:23.128 INFO (MainThread) [homeassistant.setup] Setup of domain frontend took 0.00 seconds
-2025-05-10 12:09:23.128 INFO (MainThread) [homeassistant.bootstrap] Setting up stage recorder: {'recorder'} | set()
+2025-05-10 12:56:31.870 WARNING (MainThread) [homeassistant.bootstrap] Skipping pip installation of required modules. This may cause issues
+2025-05-10 12:56:31.871 WARNING (SyncWorker_0) [homeassistant.loader] We found a custom integration uk_bin_collection which has not been tested by Home Assistant. This component might cause stability problems, be sure to disable it if you experience issues with Home Assistant
+2025-05-10 12:56:32.097 INFO (MainThread) [homeassistant.setup] Setting up system_log
+2025-05-10 12:56:32.098 WARNING (MainThread) [aiohttp_fast_zlib] zlib_ng and isal are not available, falling back to zlib, performance will be degraded.
+2025-05-10 12:56:32.120 INFO (MainThread) [homeassistant.setup] Setup of domain http took 0.02 seconds
+2025-05-10 12:56:32.120 INFO (MainThread) [homeassistant.setup] Setting up websocket_api
+2025-05-10 12:56:32.120 INFO (MainThread) [homeassistant.setup] Setup of domain websocket_api took 0.00 seconds
+2025-05-10 12:56:32.120 INFO (MainThread) [homeassistant.setup] Setup of domain logger took 0.02 seconds
+2025-05-10 12:56:32.120 INFO (MainThread) [homeassistant.setup] Setup of domain system_log took 0.02 seconds
+2025-05-10 12:56:32.120 INFO (MainThread) [homeassistant.setup] Setting up network
+2025-05-10 12:56:32.121 INFO (MainThread) [homeassistant.setup] Setup of domain network took 0.00 seconds
+2025-05-10 12:56:32.121 INFO (MainThread) [homeassistant.bootstrap] Setting up stage frontend: {'frontend'} | set()
+Dependencies: {'device_automation', 'auth', 'repairs', 'config', 'search', 'diagnostics', 'lovelace', 'api', 'onboarding', 'file_upload'} | {'http', 'websocket_api', 'system_log'}
+2025-05-10 12:56:32.121 INFO (MainThread) [homeassistant.setup] Setting up api
+2025-05-10 12:56:32.121 INFO (MainThread) [homeassistant.setup] Setup of domain api took 0.00 seconds
+2025-05-10 12:56:32.121 INFO (MainThread) [homeassistant.setup] Setting up auth
+2025-05-10 12:56:32.121 INFO (MainThread) [homeassistant.setup] Setup of domain auth took 0.00 seconds
+2025-05-10 12:56:32.122 INFO (MainThread) [homeassistant.setup] Setting up config
+2025-05-10 12:56:32.122 INFO (MainThread) [homeassistant.setup] Setup of domain config took 0.00 seconds
+2025-05-10 12:56:32.122 INFO (MainThread) [homeassistant.setup] Setting up device_automation
+2025-05-10 12:56:32.122 INFO (MainThread) [homeassistant.setup] Setup of domain device_automation took 0.00 seconds
+2025-05-10 12:56:32.122 INFO (MainThread) [homeassistant.setup] Setting up diagnostics
+2025-05-10 12:56:32.123 INFO (MainThread) [homeassistant.setup] Setup of domain diagnostics took 0.00 seconds
+2025-05-10 12:56:32.123 INFO (MainThread) [homeassistant.setup] Setting up file_upload
+2025-05-10 12:56:32.123 INFO (MainThread) [homeassistant.setup] Setup of domain file_upload took 0.00 seconds
+2025-05-10 12:56:32.123 INFO (MainThread) [homeassistant.setup] Setting up onboarding
+2025-05-10 12:56:32.123 INFO (MainThread) [homeassistant.setup] Setup of domain onboarding took 0.00 seconds
+2025-05-10 12:56:32.123 INFO (MainThread) [homeassistant.setup] Setting up lovelace
+2025-05-10 12:56:32.123 INFO (MainThread) [homeassistant.setup] Setting up repairs
+2025-05-10 12:56:32.123 INFO (MainThread) [homeassistant.setup] Setup of domain repairs took 0.00 seconds
+2025-05-10 12:56:32.123 INFO (MainThread) [homeassistant.setup] Setting up search
+2025-05-10 12:56:32.123 INFO (MainThread) [homeassistant.setup] Setup of domain search took 0.00 seconds
+2025-05-10 12:56:32.124 INFO (MainThread) [homeassistant.setup] Setup of domain lovelace took 0.00 seconds
+2025-05-10 12:56:32.124 INFO (MainThread) [homeassistant.setup] Setting up frontend
+2025-05-10 12:56:32.125 INFO (MainThread) [homeassistant.setup] Setup of domain frontend took 0.00 seconds
+2025-05-10 12:56:32.125 INFO (MainThread) [homeassistant.bootstrap] Setting up stage recorder: {'recorder'} | set()
 Dependencies: set() | set()
-2025-05-10 12:09:23.128 INFO (MainThread) [homeassistant.setup] Setting up recorder
-2025-05-10 12:09:23.129 INFO (MainThread) [homeassistant.components.http] Now listening on port 8123
-2025-05-10 12:09:23.129 INFO (MainThread) [homeassistant.setup] Setup of domain http took 0.00 seconds
-2025-05-10 12:09:23.129 WARNING (Recorder) [homeassistant.components.recorder.util] The system could not validate that the sqlite3 database at //Users/davidamor/GitHub/homeassistant-debug/config/home-assistant_v2.db was shutdown cleanly
-2025-05-10 12:09:23.134 WARNING (Recorder) [homeassistant.components.recorder.util] Ended unfinished session (id=33 from 2025-05-10 10:58:32.509992)
-2025-05-10 12:09:23.137 INFO (MainThread) [homeassistant.setup] Setup of domain recorder took 0.01 seconds
-2025-05-10 12:09:23.137 INFO (MainThread) [homeassistant.bootstrap] Nothing to set up in stage debugger: {'debugpy'}
-2025-05-10 12:09:23.137 INFO (MainThread) [homeassistant.bootstrap] Setting up stage zeroconf: {'zeroconf'} | set()
-Dependencies: set() | {'websocket_api', 'api', 'http', 'network'}
-2025-05-10 12:09:23.137 INFO (MainThread) [homeassistant.setup] Setting up zeroconf
-2025-05-10 12:09:23.138 INFO (MainThread) [homeassistant.components.zeroconf] Starting Zeroconf broadcast
-2025-05-10 12:09:23.138 INFO (MainThread) [homeassistant.setup] Setup of domain zeroconf took 0.00 seconds
-2025-05-10 12:09:23.138 INFO (MainThread) [homeassistant.bootstrap] Setting up stage 1: {'bluetooth', 'usb', 'dhcp', 'cloud', 'ssdp'} | set()
-Dependencies: {'conversation', 'wake_word', 'stt', 'ffmpeg', 'webhook', 'backup', 'assist_pipeline', 'intent', 'tts'} | {'websocket_api', 'repairs', 'http', 'auth', 'network'}
-2025-05-10 12:09:23.138 INFO (MainThread) [homeassistant.setup] Setting up webhook
-2025-05-10 12:09:23.138 INFO (MainThread) [homeassistant.setup] Setup of domain webhook took 0.00 seconds
-2025-05-10 12:09:23.138 INFO (MainThread) [homeassistant.setup] Setting up backup
-2025-05-10 12:09:23.144 INFO (MainThread) [homeassistant.setup] Setting up intent
-2025-05-10 12:09:23.145 INFO (MainThread) [homeassistant.setup] Setup of domain intent took 0.00 seconds
-2025-05-10 12:09:23.146 INFO (MainThread) [homeassistant.setup] Setting up wake_word
-2025-05-10 12:09:23.146 INFO (MainThread) [homeassistant.setup] Setup of domain wake_word took 0.00 seconds
-2025-05-10 12:09:23.146 INFO (MainThread) [homeassistant.setup] Setup of domain backup took 0.01 seconds
-2025-05-10 12:09:23.147 INFO (MainThread) [homeassistant.setup] Setting up stt
-2025-05-10 12:09:23.148 INFO (MainThread) [homeassistant.setup] Setup of domain stt took 0.00 seconds
-2025-05-10 12:09:23.148 INFO (MainThread) [homeassistant.setup] Setting up ffmpeg
-2025-05-10 12:09:23.154 ERROR (MainThread) [haffmpeg.core] FFmpeg fails [Errno 2] No such file or directory: 'ffmpeg'
+2025-05-10 12:56:32.125 INFO (MainThread) [homeassistant.setup] Setting up recorder
+2025-05-10 12:56:32.126 INFO (MainThread) [homeassistant.components.http] Now listening on port 8123
+2025-05-10 12:56:32.126 INFO (MainThread) [homeassistant.setup] Setup of domain http took 0.00 seconds
+2025-05-10 12:56:32.126 WARNING (Recorder) [homeassistant.components.recorder.util] The system could not validate that the sqlite3 database at //Users/davidamor/GitHub/homeassistant-debug/config/home-assistant_v2.db was shutdown cleanly
+2025-05-10 12:56:32.132 WARNING (Recorder) [homeassistant.components.recorder.util] Ended unfinished session (id=49 from 2025-05-10 11:55:10.164683)
+2025-05-10 12:56:32.134 INFO (MainThread) [homeassistant.setup] Setup of domain recorder took 0.01 seconds
+2025-05-10 12:56:32.135 INFO (MainThread) [homeassistant.bootstrap] Nothing to set up in stage debugger: {'debugpy'}
+2025-05-10 12:56:32.135 INFO (MainThread) [homeassistant.bootstrap] Setting up stage zeroconf: {'zeroconf'} | set()
+Dependencies: set() | {'http', 'websocket_api', 'network', 'api'}
+2025-05-10 12:56:32.135 INFO (MainThread) [homeassistant.setup] Setting up zeroconf
+2025-05-10 12:56:32.136 INFO (MainThread) [homeassistant.components.zeroconf] Starting Zeroconf broadcast
+2025-05-10 12:56:32.136 INFO (MainThread) [homeassistant.setup] Setup of domain zeroconf took 0.00 seconds
+2025-05-10 12:56:32.136 INFO (MainThread) [homeassistant.bootstrap] Setting up stage 1: {'cloud', 'usb', 'dhcp', 'ssdp', 'bluetooth'} | set()
+Dependencies: {'intent', 'conversation', 'backup', 'ffmpeg', 'assist_pipeline', 'stt', 'webhook', 'wake_word', 'tts'} | {'http', 'auth', 'repairs', 'websocket_api', 'network'}
+2025-05-10 12:56:32.136 INFO (MainThread) [homeassistant.setup] Setting up webhook
+2025-05-10 12:56:32.136 INFO (MainThread) [homeassistant.setup] Setup of domain webhook took 0.00 seconds
+2025-05-10 12:56:32.136 INFO (MainThread) [homeassistant.setup] Setting up backup
+2025-05-10 12:56:32.137 INFO (MainThread) [homeassistant.setup] Setup of domain backup took 0.00 seconds
+2025-05-10 12:56:32.141 INFO (MainThread) [homeassistant.setup] Setting up intent
+2025-05-10 12:56:32.142 INFO (MainThread) [homeassistant.setup] Setup of domain intent took 0.00 seconds
+2025-05-10 12:56:32.143 INFO (MainThread) [homeassistant.setup] Setting up wake_word
+2025-05-10 12:56:32.143 INFO (MainThread) [homeassistant.setup] Setup of domain wake_word took 0.00 seconds
+2025-05-10 12:56:32.144 INFO (MainThread) [homeassistant.setup] Setting up stt
+2025-05-10 12:56:32.145 INFO (MainThread) [homeassistant.setup] Setup of domain stt took 0.00 seconds
+2025-05-10 12:56:32.145 INFO (MainThread) [homeassistant.setup] Setting up ffmpeg
+2025-05-10 12:56:32.151 ERROR (MainThread) [haffmpeg.core] FFmpeg fails [Errno 2] No such file or directory: 'ffmpeg'
 Traceback (most recent call last):
   File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/haffmpeg/core.py", line 130, in open
     self._proc = await asyncio.create_subprocess_exec(
@@ -153,27 +111,27 @@ Traceback (most recent call last):
   File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 1969, in _execute_child
     raise child_exception_type(errno_num, err_msg, err_filename)
 FileNotFoundError: [Errno 2] No such file or directory: 'ffmpeg'
-2025-05-10 12:09:23.157 WARNING (MainThread) [haffmpeg.tools] Error starting FFmpeg.
-2025-05-10 12:09:23.157 INFO (MainThread) [homeassistant.setup] Setup of domain ffmpeg took 0.01 seconds
-2025-05-10 12:09:23.159 INFO (MainThread) [homeassistant.setup] Setting up usb
-2025-05-10 12:09:23.160 INFO (MainThread) [homeassistant.components.usb] Falling back to periodic filesystem polling for development, aiousbwatcher is not available on this system: Inotify not available on this platform
-2025-05-10 12:09:23.160 INFO (MainThread) [homeassistant.setup] Setup of domain usb took 0.00 seconds
-2025-05-10 12:09:23.201 INFO (MainThread) [homeassistant.setup] Setting up dhcp
-2025-05-10 12:09:23.201 INFO (MainThread) [homeassistant.setup] Setup of domain dhcp took 0.00 seconds
-2025-05-10 12:09:23.213 INFO (MainThread) [homeassistant.setup] Setting up ssdp
-2025-05-10 12:09:23.223 INFO (MainThread) [homeassistant.setup] Setup of domain ssdp took 0.01 seconds
-2025-05-10 12:09:23.235 INFO (MainThread) [homeassistant.setup] Setting up conversation
-2025-05-10 12:09:23.254 INFO (MainThread) [homeassistant.setup] Setup of domain conversation took 0.02 seconds
-2025-05-10 12:09:23.254 INFO (MainThread) [homeassistant.setup] Setting up tts
-2025-05-10 12:09:23.256 INFO (MainThread) [homeassistant.setup] Setup of domain tts took 0.00 seconds
-2025-05-10 12:09:23.256 INFO (MainThread) [homeassistant.setup] Setting up assist_pipeline
-2025-05-10 12:09:23.256 INFO (MainThread) [homeassistant.setup] Setup of domain assist_pipeline took 0.00 seconds
-2025-05-10 12:09:23.291 INFO (MainThread) [homeassistant.setup] Setting up bluetooth
-2025-05-10 12:09:23.291 INFO (MainThread) [homeassistant.setup] Setup of domain bluetooth took 0.00 seconds
-2025-05-10 12:09:23.377 INFO (MainThread) [homeassistant.setup] Setting up sensor
-2025-05-10 12:09:23.378 INFO (MainThread) [homeassistant.setup] Setup of domain sensor took 0.00 seconds
-2025-05-10 12:09:23.378 INFO (MainThread) [homeassistant.components.sensor] Setting up backup.sensor
-2025-05-10 12:09:23.465 ERROR (ImportExecutor_0) [homeassistant.components.camera.img_util] Error loading libturbojpeg; Camera snapshot performance will be sub-optimal
+2025-05-10 12:56:32.155 WARNING (MainThread) [haffmpeg.tools] Error starting FFmpeg.
+2025-05-10 12:56:32.156 INFO (MainThread) [homeassistant.setup] Setup of domain ffmpeg took 0.01 seconds
+2025-05-10 12:56:32.158 INFO (MainThread) [homeassistant.setup] Setting up usb
+2025-05-10 12:56:32.158 INFO (MainThread) [homeassistant.components.usb] Falling back to periodic filesystem polling for development, aiousbwatcher is not available on this system: Inotify not available on this platform
+2025-05-10 12:56:32.159 INFO (MainThread) [homeassistant.setup] Setup of domain usb took 0.00 seconds
+2025-05-10 12:56:32.198 INFO (MainThread) [homeassistant.setup] Setting up dhcp
+2025-05-10 12:56:32.198 INFO (MainThread) [homeassistant.setup] Setup of domain dhcp took 0.00 seconds
+2025-05-10 12:56:32.210 INFO (MainThread) [homeassistant.setup] Setting up ssdp
+2025-05-10 12:56:32.222 INFO (MainThread) [homeassistant.setup] Setup of domain ssdp took 0.01 seconds
+2025-05-10 12:56:32.233 INFO (MainThread) [homeassistant.setup] Setting up conversation
+2025-05-10 12:56:32.251 INFO (MainThread) [homeassistant.setup] Setup of domain conversation took 0.02 seconds
+2025-05-10 12:56:32.252 INFO (MainThread) [homeassistant.setup] Setting up tts
+2025-05-10 12:56:32.253 INFO (MainThread) [homeassistant.setup] Setup of domain tts took 0.00 seconds
+2025-05-10 12:56:32.253 INFO (MainThread) [homeassistant.setup] Setting up assist_pipeline
+2025-05-10 12:56:32.254 INFO (MainThread) [homeassistant.setup] Setup of domain assist_pipeline took 0.00 seconds
+2025-05-10 12:56:32.288 INFO (MainThread) [homeassistant.setup] Setting up bluetooth
+2025-05-10 12:56:32.288 INFO (MainThread) [homeassistant.setup] Setup of domain bluetooth took 0.00 seconds
+2025-05-10 12:56:32.371 INFO (MainThread) [homeassistant.setup] Setting up sensor
+2025-05-10 12:56:32.371 INFO (MainThread) [homeassistant.setup] Setup of domain sensor took 0.00 seconds
+2025-05-10 12:56:32.371 INFO (MainThread) [homeassistant.components.sensor] Setting up backup.sensor
+2025-05-10 12:56:32.461 ERROR (ImportExecutor_0) [homeassistant.components.camera.img_util] Error loading libturbojpeg; Camera snapshot performance will be sub-optimal
 Traceback (most recent call last):
   File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/components/camera/img_util.py", line 93, in __init__
     TurboJPEGSingleton.__instance = TurboJPEG()
@@ -187,202 +145,194 @@ Traceback (most recent call last):
         'e.g. jpeg = TurboJPEG(lib_path)')
 RuntimeError: Unable to locate turbojpeg library automatically. You may specify the turbojpeg library path manually.
 e.g. jpeg = TurboJPEG(lib_path)
-2025-05-10 12:09:23.482 INFO (MainThread) [homeassistant.setup] Setting up cloud
-2025-05-10 12:09:23.482 INFO (MainThread) [homeassistant.setup] Setup of domain cloud took 0.00 seconds
-2025-05-10 12:09:23.482 INFO (MainThread) [homeassistant.bootstrap] Setting up stage 2: {'scene', 'automation', 'zone', 'script', 'input_text', 'input_select', 'input_number', 'uk_bin_collection', 'tag', 'application_credentials', 'thread', 'counter', 'hardware', 'sonos', 'met', 'input_button', 'person', 'schedule', 'input_datetime', 'google_translate', 'radio_browser', 'cast', 'default_config', 'system_health', 'analytics', 'input_boolean', 'timer', 'sun', 'shopping_list'} | {'bluetooth', 'frontend', 'network', 'backup', 'logger'}
-Dependencies: {'logbook', 'energy', 'go2rtc', 'image_upload', 'stream', 'my', 'homeassistant_alerts', 'mobile_app', 'media_source', 'blueprint', 'history', 'camera', 'trace'} | {'api', 'zeroconf', 'bluetooth', 'frontend', 'recorder', 'usb', 'dhcp', 'file_upload', 'repairs', 'conversation', 'onboarding', 'wake_word', 'webhook', 'assist_pipeline', 'diagnostics', 'tts', 'search', 'http', 'device_automation', 'auth', 'stt', 'ffmpeg', 'lovelace', 'ssdp', 'websocket_api', 'config', 'cloud', 'system_log', 'network', 'backup', 'intent'}
-2025-05-10 12:09:23.482 INFO (MainThread) [homeassistant.setup] Setting up scene
-2025-05-10 12:09:23.483 INFO (MainThread) [homeassistant.setup] Setting up camera
-2025-05-10 12:09:23.483 INFO (MainThread) [homeassistant.setup] Setting up blueprint
-2025-05-10 12:09:23.483 INFO (MainThread) [homeassistant.setup] Setup of domain blueprint took 0.00 seconds
-2025-05-10 12:09:23.483 INFO (MainThread) [homeassistant.setup] Setting up trace
-2025-05-10 12:09:23.483 INFO (MainThread) [homeassistant.setup] Setup of domain trace took 0.00 seconds
-2025-05-10 12:09:23.483 INFO (MainThread) [homeassistant.setup] Setting up automation
-2025-05-10 12:09:23.484 INFO (MainThread) [homeassistant.setup] Setting up logbook
-2025-05-10 12:09:23.484 INFO (MainThread) [homeassistant.setup] Setting up zone
-2025-05-10 12:09:23.484 INFO (MainThread) [homeassistant.setup] Setting up script
-2025-05-10 12:09:23.484 INFO (MainThread) [homeassistant.setup] Setting up input_select
-2025-05-10 12:09:23.485 INFO (MainThread) [homeassistant.setup] Setting up input_number
-2025-05-10 12:09:23.485 INFO (MainThread) [homeassistant.setup] Setting up stream
-2025-05-10 12:09:23.485 INFO (MainThread) [homeassistant.setup] Setting up history
-2025-05-10 12:09:23.485 INFO (MainThread) [homeassistant.setup] Setup of domain history took 0.00 seconds
-2025-05-10 12:09:23.485 INFO (MainThread) [homeassistant.setup] Setting up media_source
-2025-05-10 12:09:23.486 INFO (MainThread) [homeassistant.setup] Setting up input_button
-2025-05-10 12:09:23.486 INFO (MainThread) [homeassistant.setup] Setting up image_upload
-2025-05-10 12:09:23.486 INFO (MainThread) [homeassistant.setup] Setup of domain image_upload took 0.00 seconds
-2025-05-10 12:09:23.486 INFO (MainThread) [homeassistant.setup] Setting up person
-2025-05-10 12:09:23.486 INFO (MainThread) [homeassistant.setup] Setting up system_health
-2025-05-10 12:09:23.486 INFO (MainThread) [homeassistant.setup] Setting up input_boolean
-2025-05-10 12:09:23.486 INFO (MainThread) [homeassistant.setup] Setting up timer
-2025-05-10 12:09:23.489 INFO (MainThread) [homeassistant.setup] Setting up input_text
-2025-05-10 12:09:23.490 INFO (MainThread) [homeassistant.setup] Setup of domain scene took 0.01 seconds
-2025-05-10 12:09:23.502 INFO (MainThread) [homeassistant.setup] Setup of domain camera took 0.02 seconds
-2025-05-10 12:09:23.502 INFO (MainThread) [homeassistant.setup] Setting up my
-2025-05-10 12:09:23.502 INFO (MainThread) [homeassistant.setup] Setup of domain my took 0.00 seconds
-2025-05-10 12:09:23.503 INFO (MainThread) [homeassistant.setup] Setup of domain automation took 0.02 seconds
-2025-05-10 12:09:23.503 INFO (MainThread) [homeassistant.setup] Setup of domain logbook took 0.02 seconds
-2025-05-10 12:09:23.504 INFO (MainThread) [homeassistant.setup] Setup of domain zone took 0.02 seconds
-2025-05-10 12:09:23.509 INFO (MainThread) [homeassistant.setup] Setup of domain script took 0.03 seconds
-2025-05-10 12:09:23.512 INFO (MainThread) [homeassistant.setup] Setup of domain input_text took 0.02 seconds
-2025-05-10 12:09:23.522 INFO (MainThread) [homeassistant.setup] Setup of domain input_select took 0.04 seconds
-2025-05-10 12:09:23.527 INFO (MainThread) [homeassistant.setup] Setup of domain input_number took 0.04 seconds
-2025-05-10 12:09:23.527 ERROR (SyncWorker_0) [homeassistant.util.json] Could not parse JSON content: /Users/davidamor/GitHub/homeassistant-debug/config/custom_components/uk_bin_collection/translations/en.json
-Traceback (most recent call last):
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/util/json.py", line 73, in load_json
-    return orjson.loads(fdesc.read())  # type: ignore[no-any-return]
-           ~~~~~~~~~~~~^^^^^^^^^^^^^^
-orjson.JSONDecodeError: trailing comma is not allowed: line 22 column 18 (char 987)
-2025-05-10 12:09:23.577 INFO (MainThread) [homeassistant.setup] Setup of domain media_source took 0.09 seconds
-2025-05-10 12:09:23.597 INFO (MainThread) [homeassistant.setup] Setup of domain stream took 0.11 seconds
-2025-05-10 12:09:23.597 INFO (MainThread) [homeassistant.setup] Setup of domain input_button took 0.11 seconds
-2025-05-10 12:09:23.600 INFO (MainThread) [homeassistant.setup] Setup of domain person took 0.11 seconds
-2025-05-10 12:09:23.630 INFO (MainThread) [homeassistant.setup] Setup of domain system_health took 0.14 seconds
-2025-05-10 12:09:23.643 INFO (MainThread) [homeassistant.setup] Setup of domain input_boolean took 0.16 seconds
-2025-05-10 12:09:23.665 INFO (MainThread) [homeassistant.setup] Setup of domain timer took 0.18 seconds
-2025-05-10 12:09:23.674 INFO (MainThread) [homeassistant.components.scene] Setting up homeassistant.scene
-2025-05-10 12:09:23.885 INFO (MainThread) [homeassistant.setup] Setting up uk_bin_collection
-2025-05-10 12:09:23.885 DEBUG (MainThread) [custom_components.uk_bin_collection] [UKBinCollection] async_setup called with config: {'default_config': {}, 'logger': {'default': 'info', 'logs': {'custom_components.uk_bin_collection': 'debug'}}, 'uk_bin_collection': []}
-2025-05-10 12:09:23.885 DEBUG (MainThread) [custom_components.uk_bin_collection] [UKBinCollection] hass.data[DOMAIN] initialized: {}
-2025-05-10 12:09:23.885 DEBUG (MainThread) [custom_components.uk_bin_collection] [UKBinCollection] Registering manual_refresh service
-2025-05-10 12:09:23.885 DEBUG (MainThread) [custom_components.uk_bin_collection] [UKBinCollection] manual_refresh service registered successfully
-2025-05-10 12:09:23.885 INFO (MainThread) [custom_components.uk_bin_collection] [UKBinCollection] async_setup completed without errors.
-2025-05-10 12:09:23.885 INFO (MainThread) [homeassistant.setup] Setup of domain uk_bin_collection took 0.00 seconds
-2025-05-10 12:09:23.887 INFO (MainThread) [homeassistant.setup] Setting up tag
-2025-05-10 12:09:23.887 INFO (MainThread) [homeassistant.setup] Setup of domain tag took 0.00 seconds
-2025-05-10 12:09:23.888 INFO (MainThread) [homeassistant.setup] Setting up application_credentials
-2025-05-10 12:09:23.888 INFO (MainThread) [homeassistant.setup] Setup of domain application_credentials took 0.00 seconds
-2025-05-10 12:09:23.892 INFO (MainThread) [homeassistant.setup] Setting up thread
-2025-05-10 12:09:23.892 INFO (MainThread) [homeassistant.setup] Setup of domain thread took 0.00 seconds
-2025-05-10 12:09:23.893 INFO (MainThread) [homeassistant.setup] Setting up counter
-2025-05-10 12:09:23.893 INFO (MainThread) [homeassistant.setup] Setup of domain counter took 0.00 seconds
-2025-05-10 12:09:23.894 INFO (MainThread) [homeassistant.setup] Setting up hardware
-2025-05-10 12:09:23.897 INFO (MainThread) [homeassistant.setup] Setting up met
-2025-05-10 12:09:23.897 INFO (MainThread) [homeassistant.setup] Setup of domain met took 0.00 seconds
-2025-05-10 12:09:23.904 INFO (MainThread) [homeassistant.setup] Setup of domain hardware took 0.01 seconds
-2025-05-10 12:09:23.904 INFO (MainThread) [homeassistant.setup] Setting up homeassistant_alerts
-2025-05-10 12:09:23.904 INFO (MainThread) [homeassistant.setup] Setup of domain homeassistant_alerts took 0.00 seconds
-2025-05-10 12:09:23.905 INFO (MainThread) [homeassistant.setup] Setting up schedule
-2025-05-10 12:09:23.906 INFO (MainThread) [homeassistant.setup] Setup of domain schedule took 0.00 seconds
-2025-05-10 12:09:23.906 INFO (MainThread) [homeassistant.setup] Setting up input_datetime
-2025-05-10 12:09:23.906 INFO (MainThread) [homeassistant.setup] Setup of domain input_datetime took 0.00 seconds
-2025-05-10 12:09:23.907 INFO (MainThread) [homeassistant.setup] Setting up google_translate
-2025-05-10 12:09:23.907 INFO (MainThread) [homeassistant.setup] Setup of domain google_translate took 0.00 seconds
-2025-05-10 12:09:23.923 INFO (MainThread) [homeassistant.setup] Setting up radio_browser
-2025-05-10 12:09:23.923 INFO (MainThread) [homeassistant.setup] Setup of domain radio_browser took 0.00 seconds
-2025-05-10 12:09:23.925 INFO (MainThread) [homeassistant.setup] Setting up energy
-2025-05-10 12:09:23.925 INFO (MainThread) [homeassistant.setup] Setup of domain energy took 0.00 seconds
-2025-05-10 12:09:23.926 INFO (MainThread) [homeassistant.setup] Setting up sun
-2025-05-10 12:09:23.926 INFO (MainThread) [homeassistant.setup] Setup of domain sun took 0.00 seconds
-2025-05-10 12:09:23.926 INFO (MainThread) [homeassistant.components.sensor] Setting up sun.sensor
-2025-05-10 12:09:23.929 INFO (MainThread) [homeassistant.setup] Setting up shopping_list
-2025-05-10 12:09:23.929 INFO (MainThread) [homeassistant.setup] Setup of domain shopping_list took 0.00 seconds
-2025-05-10 12:09:23.943 INFO (MainThread) [homeassistant.setup] Setting up go2rtc
-2025-05-10 12:09:23.943 INFO (MainThread) [homeassistant.setup] Setup of domain go2rtc took 0.00 seconds
-2025-05-10 12:09:23.958 INFO (MainThread) [homeassistant.setup] Setting up cast
-2025-05-10 12:09:23.958 INFO (MainThread) [homeassistant.setup] Setup of domain cast took 0.00 seconds
-2025-05-10 12:09:23.976 INFO (MainThread) [homeassistant.setup] Setting up sonos
-2025-05-10 12:09:23.976 INFO (MainThread) [homeassistant.setup] Setup of domain sonos took 0.00 seconds
-2025-05-10 12:09:23.986 INFO (MainThread) [homeassistant.setup] Setting up mobile_app
-2025-05-10 12:09:23.986 INFO (MainThread) [homeassistant.setup] Setting up notify
-2025-05-10 12:09:23.987 INFO (MainThread) [homeassistant.setup] Setup of domain mobile_app took 0.00 seconds
-2025-05-10 12:09:23.987 INFO (MainThread) [homeassistant.setup] Setting up default_config
-2025-05-10 12:09:23.987 INFO (MainThread) [homeassistant.setup] Setup of domain default_config took 0.00 seconds
-2025-05-10 12:09:23.987 INFO (MainThread) [homeassistant.setup] Setup of domain notify took 0.00 seconds
-2025-05-10 12:09:23.987 INFO (MainThread) [homeassistant.components.notify] Setting up notify.mobile_app
-2025-05-10 12:09:23.990 INFO (MainThread) [homeassistant.components.tts] Setting up google_translate.tts
-2025-05-10 12:09:23.990 INFO (MainThread) [homeassistant.components.sensor] Setting up energy.sensor
-2025-05-10 12:09:23.991 INFO (MainThread) [homeassistant.setup] Setting up analytics
-2025-05-10 12:09:23.991 INFO (MainThread) [homeassistant.setup] Setup of domain analytics took 0.00 seconds
-2025-05-10 12:09:23.992 INFO (MainThread) [homeassistant.setup] Setting up todo
-2025-05-10 12:09:23.993 INFO (MainThread) [homeassistant.setup] Setup of domain todo took 0.00 seconds
-2025-05-10 12:09:23.993 INFO (MainThread) [homeassistant.components.todo] Setting up shopping_list.todo
-2025-05-10 12:09:23.996 INFO (MainThread) [homeassistant.setup] Setting up media_player
-2025-05-10 12:09:23.998 INFO (MainThread) [homeassistant.setup] Setup of domain media_player took 0.00 seconds
-2025-05-10 12:09:23.998 INFO (MainThread) [homeassistant.components.media_player] Setting up cast.media_player
-2025-05-10 12:09:24.105 INFO (MainThread) [homeassistant.setup] Setting up binary_sensor
-2025-05-10 12:09:24.105 INFO (MainThread) [homeassistant.components.media_player] Setting up sonos.media_player
-2025-05-10 12:09:24.105 INFO (MainThread) [homeassistant.setup] Setting up number
-2025-05-10 12:09:24.105 INFO (MainThread) [homeassistant.components.sensor] Setting up sonos.sensor
-2025-05-10 12:09:24.105 INFO (MainThread) [homeassistant.setup] Setting up switch
-2025-05-10 12:09:24.107 INFO (MainThread) [homeassistant.setup] Setup of domain binary_sensor took 0.00 seconds
-2025-05-10 12:09:24.107 INFO (MainThread) [homeassistant.components.binary_sensor] Setting up sonos.binary_sensor
-2025-05-10 12:09:24.107 INFO (MainThread) [homeassistant.setup] Setup of domain number took 0.00 seconds
-2025-05-10 12:09:24.107 INFO (MainThread) [homeassistant.components.number] Setting up sonos.number
-2025-05-10 12:09:24.108 INFO (MainThread) [homeassistant.setup] Setup of domain switch took 0.00 seconds
-2025-05-10 12:09:24.108 INFO (MainThread) [homeassistant.components.switch] Setting up sonos.switch
-2025-05-10 12:09:24.304 INFO (MainThread) [homeassistant.setup] Setting up weather
-2025-05-10 12:09:24.305 INFO (MainThread) [homeassistant.setup] Setup of domain weather took 0.00 seconds
-2025-05-10 12:09:24.305 INFO (MainThread) [homeassistant.components.weather] Setting up met.weather
-2025-05-10 12:09:24.316 ERROR (MainThread) [homeassistant.bootstrap] Error setting up integration uk_bin_collection - received exception
-Traceback (most recent call last):
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/util/json.py", line 73, in load_json
-    return orjson.loads(fdesc.read())  # type: ignore[no-any-return]
-           ~~~~~~~~~~~~^^^^^^^^^^^^^^
-orjson.JSONDecodeError: trailing comma is not allowed: line 22 column 18 (char 987)
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/setup.py", line 191, in async_setup_component
-    await future
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/setup.py", line 191, in async_setup_component
-    await future
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/setup.py", line 171, in async_setup_component
-    result = await _async_setup_component(hass, domain, config)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/setup.py", line 456, in _async_setup_component
-    await load_translations_task
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/helpers/translation.py", line 420, in async_load_integrations
-    await _async_get_translations_cache(hass).async_load(
-        hass.config.language, integrations
-    )
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/helpers/translation.py", line 179, in async_load
-    await self._async_load(language, components_to_load)
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/helpers/translation.py", line 232, in _async_load
-    translation_by_language_strings = await _async_get_component_strings(
-                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        self.hass, languages, components, integrations
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/helpers/translation.py", line 115, in _async_get_component_strings
-    loaded_translations_by_language = await hass.async_add_executor_job(
-                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        _load_translations_files_by_language, files_to_load_by_language
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/concurrent/futures/thread.py", line 59, in run
-    result = self.fn(*self.args, **self.kwargs)
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/helpers/translation.py", line 59, in _load_translations_files_by_language
-    loaded_json = load_json(translation_file)
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/util/json.py", line 79, in load_json
-    raise HomeAssistantError(f"Error while loading {filename}: {error}") from error
-homeassistant.exceptions.HomeAssistantError: Error while loading /Users/davidamor/GitHub/homeassistant-debug/config/custom_components/uk_bin_collection/translations/en.json: trailing comma is not allowed: line 22 column 18 (char 987)
-2025-05-10 12:09:24.411 INFO (MainThread) [homeassistant.bootstrap] Home Assistant initialized in 1.54s
-2025-05-10 12:09:24.411 INFO (MainThread) [homeassistant.core] Starting Home Assistant
-2025-05-10 12:09:24.416 INFO (SyncWorker_2) [homeassistant.loader] Loaded apple_tv from homeassistant.components.apple_tv
-2025-05-10 12:09:24.416 INFO (SyncWorker_5) [homeassistant.loader] Loaded ipp from homeassistant.components.ipp
-2025-05-10 12:09:24.416 INFO (SyncWorker_6) [homeassistant.loader] Loaded ibeacon from homeassistant.components.ibeacon
-2025-05-10 12:09:24.417 INFO (SyncWorker_1) [homeassistant.loader] Loaded elgato from homeassistant.components.elgato
-2025-05-10 12:09:24.417 INFO (SyncWorker_0) [homeassistant.loader] Loaded hue from homeassistant.components.hue
-2025-05-10 12:09:24.433 INFO (SyncWorker_5) [homeassistant.loader] Loaded bluetooth_adapters from homeassistant.components.bluetooth_adapters
-2025-05-10 12:09:24.849 INFO (MainThread) [homeassistant.setup] Setting up bluetooth_adapters
-2025-05-10 12:09:26.291 ERROR (SyncWorker_2) [homeassistant.util.json] Could not parse JSON content: /Users/davidamor/GitHub/homeassistant-debug/config/custom_components/uk_bin_collection/translations/en.json
-Traceback (most recent call last):
-  File "/Users/davidamor/GitHub/homeassistant-debug/.venv/lib/python3.13/site-packages/homeassistant/util/json.py", line 73, in load_json
-    return orjson.loads(fdesc.read())  # type: ignore[no-any-return]
-           ~~~~~~~~~~~~^^^^^^^^^^^^^^
-orjson.JSONDecodeError: trailing comma is not allowed: line 22 column 18 (char 987)
-2025-05-10 12:09:26.293 ERROR (MainThread) [homeassistant.components.websocket_api.http.connection] [5081359808] Error handling message: Error while loading /Users/davidamor/GitHub/homeassistant-debug/config/custom_components/uk_bin_collection/translations/en.json: trailing comma is not allowed: line 22 column 18 (char 987) (home_assistant_error) damor from ::1 (Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15)
-2025-05-10 12:09:30.335 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Loaded and sorted 337 councils (with aliases)
-2025-05-10 12:09:30.336 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Loaded council data: ['AberdeenCityCouncil', 'AberdeenshireCouncil', 'AdurAndWorthingCouncils', 'AmberValleyBoroughCouncil', 'AngusCouncil', 'AntrimAndNewtonabbeyCouncil', 'ArdsAndNorthDownCouncil', 'ArgyllandButeCouncil', 'ArmaghBanbridgeCraigavonCouncil', 'ArunCouncil', 'AshfieldDistrictCouncil', 'AshfordBoroughCouncil', 'AylesburyValeCouncil', 'BCPCouncil', 'BaberghDistrictCouncil', 'BarkingDagenham', 'BarnetCouncil', 'BarnsleyMBCouncil', 'BasildonCouncil', 'BasingstokeCouncil', 'BathAndNorthEastSomersetCouncil', 'BedfordBoroughCouncil', 'BedfordshireCouncil', 'BelfastCityCouncil', 'BexleyCouncil', 'BirminghamCityCouncil', 'BlabyDistrictCouncil', 'BlackburnCouncil', 'BlaenauGwentCountyBoroughCouncil', 'BolsoverCouncil', 'BoltonCouncil', 'BostonBoroughCouncil', 'BracknellForestCouncil', 'BradfordMDC', 'BraintreeDistrictCouncil', 'BrecklandCouncil', 'BrentCouncil', 'BrentwoodBoroughCouncil', 'BrightonandHoveCityCouncil', 'BristolCityCouncil', 'BroadlandDistrictCouncil', 'BromleyBoroughCouncil', 'BromsgroveDistrictCouncil', 'BroxbourneCouncil', 'BroxtoweBoroughCouncil', 'BuckinghamshireCouncil', 'BurnleyBoroughCouncil', 'BuryCouncil', 'CalderdaleCouncil', 'CambridgeCityCouncil', 'CannockChaseDistrictCouncil', 'CanterburyCityCouncil', 'CardiffCouncil', 'CarmarthenshireCountyCouncil', 'CastlepointDistrictCouncil', 'CeredigionCountyCouncil', 'CharnwoodBoroughCouncil', 'ChelmsfordCityCouncil', 'CheltenhamBoroughCouncil', 'CherwellDistrictCouncil', 'CheshireEastCouncil', 'CheshireWestAndChesterCouncil', 'ChesterfieldBoroughCouncil', 'ChichesterDistrictCouncil', 'ChorleyCouncil', 'ClackmannanshireCouncil', 'ColchesterCityCouncil', 'ConwyCountyBorough', 'CopelandBoroughCouncil', 'CornwallCouncil', 'CotswoldDistrictCouncil', 'CoventryCityCouncil', 'CrawleyBoroughCouncil', 'CroydonCouncil', 'CumberlandAllerdaleCouncil', 'CumberlandCouncil', 'DacorumBoroughCouncil', 'DartfordBoroughCouncil', 'DenbighshireCouncil', 'DerbyCityCouncil', 'DerbyshireDalesDistrictCouncil', 'DerryAndStrabaneDistrictCouncil', 'DoncasterCouncil', 'DorsetCouncil', 'DoverDistrictCouncil', 'DudleyCouncil', 'DundeeCityCouncil', 'DurhamCouncil', 'EalingCouncil', 'EastAyrshireCouncil', 'EastCambridgeshireCouncil', 'EastDevonDC', 'EastDunbartonshireCouncil', 'EastHampshireCountyCouncil', 'EastHertsCouncil', 'EastLindseyDistrictCouncil', 'EastLothianCouncil', 'EastRenfrewshireCouncil', 'EastRidingCouncil', 'EastStaffordshireBoroughCouncil', 'EastSuffolkCouncil', 'EastleighBoroughCouncil', 'EdinburghCityCouncil', 'ElmbridgeBoroughCouncil', 'EnfieldCouncil', 'EnvironmentFirst', 'EppingForestDistrictCouncil', 'EpsomandEwellBoroughCouncil', 'ErewashBoroughCouncil', 'ExeterCityCouncil', 'FalkirkCouncil', 'FarehamBoroughCouncil', 'FenlandDistrictCouncil', 'FermanaghOmaghDistrictCouncil', 'FifeCouncil', 'FlintshireCountyCouncil', 'FolkstoneandHytheDistrictCouncil', 'ForestOfDeanDistrictCouncil', 'FyldeCouncil', 'GatesheadCouncil', 'GedlingBoroughCouncil', 'GlasgowCityCouncil', 'GloucesterCityCouncil', 'GooglePublicCalendarCouncil', 'GraveshamBoroughCouncil', 'GreatYarmouthBoroughCouncil', 'GuildfordCouncil', 'GwyneddCouncil', 'HackneyCouncil', 'HaltonBoroughCouncil', 'HarboroughDistrictCouncil', 'HaringeyCouncil', 'HarrogateBoroughCouncil', 'HartDistrictCouncil', 'HartlepoolBoroughCouncil', 'HastingsBoroughCouncil', 'HavantBoroughCouncil', 'HerefordshireCouncil', 'HertsmereBoroughCouncil', 'HighPeakCouncil', 'HighlandCouncil', 'Hillingdon', 'HinckleyandBosworthBoroughCouncil', 'HorshamDistrictCouncil', 'HullCityCouncil', 'HuntingdonDistrictCouncil', 'HyndburnBoroughCouncil', 'IpswichBoroughCouncil', 'IsleOfWightCouncil', 'IslingtonCouncil', 'KingsLynnandWestNorfolkBC', 'KingstonUponThamesCouncil', 'KirkleesCouncil', 'KnowsleyMBCouncil', 'LancasterCityCouncil', 'LeedsCityCouncil', 'LeicesterCityCouncil', 'LichfieldDistrictCouncil', 'LincolnCouncil', 'LisburnCastlereaghCityCouncil', 'LiverpoolCityCouncil', 'LondonBoroughEaling', 'LondonBoroughHarrow', 'LondonBoroughHavering', 'LondonBoroughHounslow', 'LondonBoroughLambeth', 'LondonBoroughLewisham', 'LondonBoroughOfRichmondUponThames', 'LondonBoroughRedbridge', 'LondonBoroughSutton', 'LutonBoroughCouncil', 'MaldonDistrictCouncil', 'MalvernHillsDC', 'ManchesterCityCouncil', 'MansfieldDistrictCouncil', 'MedwayCouncil', 'MeltonBoroughCouncil', 'MertonCouncil', 'MidAndEastAntrimBoroughCouncil', 'MidDevonCouncil', 'MidSuffolkDistrictCouncil', 'MidSussexDistrictCouncil', 'MidUlsterDistrictCouncil', 'MiddlesbroughCouncil', 'MidlothianCouncil', 'MiltonKeynesCityCouncil', 'MoleValleyDistrictCouncil', 'MonmouthshireCountyCouncil', 'MorayCouncil', 'NeathPortTalbotCouncil', 'NewForestCouncil', 'NewarkAndSherwoodDC', 'NewcastleCityCouncil', 'NewcastleUnderLymeCouncil', 'NewhamCouncil', 'NewportCityCouncil', 'NewryMourneAndDownDistrictCouncil', 'NorthAyrshireCouncil', 'NorthDevonCountyCouncil', 'NorthEastDerbyshireDistrictCouncil', 'NorthEastLincs', 'NorthHertfordshireDistrictCouncil', 'NorthKestevenDistrictCouncil', 'NorthLanarkshireCouncil', 'NorthLincolnshireCouncil', 'NorthNorfolkDistrictCouncil', 'NorthNorthamptonshireCouncil', 'NorthSomersetCouncil', 'NorthTynesideCouncil', 'NorthWarwickshireBoroughCouncil', 'NorthWestLeicestershire', 'NorthYorkshire', 'NorthumberlandCouncil', 'NorwichCityCouncil', 'NottinghamCityCouncil', 'NuneatonBedworthBoroughCouncil', 'OadbyAndWigstonBoroughCouncil', 'OldhamCouncil', 'OxfordCityCouncil', 'PembrokeshireCountyCouncil', 'PendleBoroughCouncil', 'PerthAndKinrossCouncil', 'PeterboroughCityCouncil', 'PlymouthCouncil', 'PortsmouthCityCouncil', 'PowysCouncil', 'PrestonCityCouncil', 'ReadingBoroughCouncil', 'RedcarandClevelandCouncil', 'RedditchBoroughCouncil', 'ReigateAndBansteadBoroughCouncil', 'RenfrewshireCouncil', 'RhonddaCynonTaffCouncil', 'RibbleValleyCouncil', 'RochdaleCouncil', 'RochfordCouncil', 'RotherDistrictCouncil', 'RotherhamCouncil', 'RoyalBoroughofGreenwich', 'RugbyBoroughCouncil', 'RunnymedeBoroughCouncil', 'RushcliffeBoroughCouncil', 'RushmoorCouncil', 'SalfordCityCouncil', 'SandwellBoroughCouncil', 'SeftonCouncil', 'SevenoaksDistrictCouncil', 'SheffieldCityCouncil', 'ShropshireCouncil', 'SloughBoroughCouncil', 'SolihullCouncil', 'SomersetCouncil', 'SouthAyrshireCouncil', 'SouthCambridgeshireCouncil', 'SouthDerbyshireDistrictCouncil', 'SouthGloucestershireCouncil', 'SouthHamsDistrictCouncil', 'SouthHollandDistrictCouncil', 'SouthKestevenDistrictCouncil', 'SouthLanarkshireCouncil', 'SouthNorfolkCouncil', 'SouthOxfordshireCouncil', 'SouthRibbleCouncil', 'SouthStaffordshireDistrictCouncil', 'SouthTynesideCouncil', 'SouthamptonCityCouncil', 'SouthwarkCouncil', 'SpelthorneBoroughCouncil', 'StAlbansCityAndDistrictCouncil', 'StHelensBC', 'StaffordBoroughCouncil', 'StaffordshireMoorlandsDistrictCouncil', 'StevenageBoroughCouncil', 'StirlingCouncil', 'StockportBoroughCouncil', 'StocktonOnTeesCouncil', 'StokeOnTrentCityCouncil', 'StratfordUponAvonCouncil', 'StroudDistrictCouncil', 'SunderlandCityCouncil', 'SurreyHeathBoroughCouncil', 'SwaleBoroughCouncil', 'SwanseaCouncil', 'SwindonBoroughCouncil', 'TamesideMBCouncil', 'TandridgeDistrictCouncil', 'TeignbridgeCouncil', 'TelfordAndWrekinCouncil', 'TendringDistrictCouncil', 'TestValleyBoroughCouncil', 'TewkesburyBoroughCouncil', 'ThanetDistrictCouncil', 'ThreeRiversDistrictCouncil', 'ThurrockCouncil', 'TonbridgeAndMallingBC', 'TorbayCouncil', 'TorfaenCountyBoroughCouncil', 'TorridgeDistrictCouncil', 'TraffordCouncil', 'TunbridgeWellsCouncil', 'UttlesfordDistrictCouncil', 'ValeofGlamorganCouncil', 'ValeofWhiteHorseCouncil', 'WakefieldCityCouncil', 'WalsallCouncil', 'WalthamForest', 'WandsworthCouncil', 'WarringtonBoroughCouncil', 'WarwickDistrictCouncil', 'WatfordBoroughCouncil', 'WaverleyBoroughCouncil', 'WealdenDistrictCouncil', 'WelhatCouncil', 'WestBerkshireCouncil', 'WestDunbartonshireCouncil', 'WestLancashireBoroughCouncil', 'WestLindseyDistrictCouncil', 'WestLothianCouncil', 'WestMorlandAndFurness', 'WestNorthamptonshireCouncil', 'WestOxfordshireDistrictCouncil', 'WestSuffolkCouncil', 'WestmorlAndFurnessCouncil', 'WiganBoroughCouncil', 'WiltshireCouncil', 'WinchesterCityCouncil', 'WindsorAndMaidenheadCouncil', 'WirralCouncil', 'WokingBoroughCouncil', 'WokinghamBoroughCouncil', 'WolverhamptonCityCouncil', 'WorcesterCityCouncil', 'WrexhamCountyBoroughCouncil', 'WychavonDistrictCouncil', 'WyreCouncil', 'WyreForestDistrictCouncil', 'YorkCouncil']
-2025-05-10 12:09:30.336 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Retrieving property info for location: 50.825770, -0.126353
-2025-05-10 12:09:30.642 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Retrieved property info - Street: West Drive, Ward: Queen's Park, Postcode: BN2 0QU, LAD24CD: E06000043, Town: Brighton
-2025-05-10 12:09:30.643 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Found LAD code: E06000043
-2025-05-10 12:09:30.643 INFO (MainThread) [custom_components.uk_bin_collection.config_flow] Found matching council: Brighton and Hove for LAD code: E06000043
-2025-05-10 12:09:30.643 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Using street name as default name: West Drive
-2025-05-10 12:09:30.643 INFO (MainThread) [custom_components.uk_bin_collection.config_flow] Pre-selecting detected council: Brighton and Hove
-2025-05-10 12:09:31.678 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] User input received: {'name': 'West Drive', 'council': 'Brighton and Hove'}
-2025-05-10 12:09:31.678 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Mapped wiki name 'Brighton and Hove' to council key 'BrightonandHoveCityCouncil'.
-2025-05-10 12:09:31.678 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] User input after mapping: {'name': 'West Drive', 'council': 'BrightonandHoveCityCouncil'}
+2025-05-10 12:56:32.478 INFO (MainThread) [homeassistant.setup] Setting up cloud
+2025-05-10 12:56:32.478 INFO (MainThread) [homeassistant.setup] Setup of domain cloud took 0.00 seconds
+2025-05-10 12:56:32.479 INFO (MainThread) [homeassistant.bootstrap] Setting up stage 2: {'timer', 'input_datetime', 'schedule', 'radio_browser', 'input_button', 'automation', 'tag', 'scene', 'google_translate', 'input_number', 'input_text', 'application_credentials', 'sonos', 'hardware', 'analytics', 'sun', 'person', 'zone', 'system_health', 'thread', 'uk_bin_collection', 'default_config', 'script', 'input_select', 'cast', 'counter', 'shopping_list', 'met', 'input_boolean'} | {'frontend', 'bluetooth', 'backup', 'network', 'logger'}
+Dependencies: {'mobile_app', 'stream', 'energy', 'image_upload', 'trace', 'camera', 'logbook', 'go2rtc', 'history', 'homeassistant_alerts', 'my', 'blueprint', 'media_source'} | {'intent', 'auth', 'conversation', 'backup', 'repairs', 'assist_pipeline', 'onboarding', 'file_upload', 'http', 'ffmpeg', 'websocket_api', 'network', 'ssdp', 'bluetooth', 'system_log', 'device_automation', 'frontend', 'cloud', 'config', 'webhook', 'lovelace', 'usb', 'dhcp', 'recorder', 'api', 'tts', 'zeroconf', 'stt', 'diagnostics', 'wake_word', 'search'}
+2025-05-10 12:56:32.479 INFO (MainThread) [homeassistant.setup] Setting up scene
+2025-05-10 12:56:32.479 INFO (MainThread) [homeassistant.setup] Setup of domain scene took 0.00 seconds
+2025-05-10 12:56:32.479 INFO (MainThread) [homeassistant.setup] Setting up camera
+2025-05-10 12:56:32.480 INFO (MainThread) [homeassistant.setup] Setup of domain camera took 0.00 seconds
+2025-05-10 12:56:32.480 INFO (MainThread) [homeassistant.setup] Setting up timer
+2025-05-10 12:56:32.480 INFO (MainThread) [homeassistant.setup] Setup of domain timer took 0.00 seconds
+2025-05-10 12:56:32.480 INFO (MainThread) [homeassistant.setup] Setting up image_upload
+2025-05-10 12:56:32.480 INFO (MainThread) [homeassistant.setup] Setup of domain image_upload took 0.00 seconds
+2025-05-10 12:56:32.480 INFO (MainThread) [homeassistant.setup] Setting up input_button
+2025-05-10 12:56:32.481 INFO (MainThread) [homeassistant.setup] Setup of domain input_button took 0.00 seconds
+2025-05-10 12:56:32.481 INFO (MainThread) [homeassistant.setup] Setting up blueprint
+2025-05-10 12:56:32.481 INFO (MainThread) [homeassistant.setup] Setup of domain blueprint took 0.00 seconds
+2025-05-10 12:56:32.481 INFO (MainThread) [homeassistant.setup] Setting up trace
+2025-05-10 12:56:32.481 INFO (MainThread) [homeassistant.setup] Setup of domain trace took 0.00 seconds
+2025-05-10 12:56:32.481 INFO (MainThread) [homeassistant.setup] Setting up automation
+2025-05-10 12:56:32.481 INFO (MainThread) [homeassistant.setup] Setup of domain automation took 0.00 seconds
+2025-05-10 12:56:32.481 INFO (MainThread) [homeassistant.setup] Setting up history
+2025-05-10 12:56:32.481 INFO (MainThread) [homeassistant.setup] Setup of domain history took 0.00 seconds
+2025-05-10 12:56:32.481 INFO (MainThread) [homeassistant.setup] Setting up input_number
+2025-05-10 12:56:32.482 INFO (MainThread) [homeassistant.setup] Setup of domain input_number took 0.00 seconds
+2025-05-10 12:56:32.483 INFO (MainThread) [homeassistant.setup] Setting up media_source
+2025-05-10 12:56:32.483 INFO (MainThread) [homeassistant.setup] Setup of domain media_source took 0.00 seconds
+2025-05-10 12:56:32.483 INFO (MainThread) [homeassistant.setup] Setting up person
+2025-05-10 12:56:32.483 INFO (MainThread) [homeassistant.setup] Setting up zone
+2025-05-10 12:56:32.483 INFO (MainThread) [homeassistant.setup] Setup of domain zone took 0.00 seconds
+2025-05-10 12:56:32.483 INFO (MainThread) [homeassistant.setup] Setting up system_health
+2025-05-10 12:56:32.483 INFO (MainThread) [homeassistant.setup] Setup of domain system_health took 0.00 seconds
+2025-05-10 12:56:32.483 INFO (MainThread) [homeassistant.setup] Setting up logbook
+2025-05-10 12:56:32.484 INFO (MainThread) [homeassistant.setup] Setup of domain logbook took 0.00 seconds
+2025-05-10 12:56:32.484 INFO (MainThread) [homeassistant.setup] Setting up stream
+2025-05-10 12:56:32.484 INFO (MainThread) [homeassistant.setup] Setting up script
+2025-05-10 12:56:32.484 INFO (MainThread) [homeassistant.setup] Setup of domain script took 0.00 seconds
+2025-05-10 12:56:32.484 INFO (MainThread) [homeassistant.setup] Setting up input_select
+2025-05-10 12:56:32.485 INFO (MainThread) [homeassistant.setup] Setup of domain input_select took 0.00 seconds
+2025-05-10 12:56:32.485 INFO (MainThread) [homeassistant.setup] Setting up input_boolean
+2025-05-10 12:56:32.485 INFO (MainThread) [homeassistant.setup] Setup of domain input_boolean took 0.00 seconds
+2025-05-10 12:56:32.486 INFO (MainThread) [homeassistant.setup] Setup of domain person took 0.00 seconds
+2025-05-10 12:56:32.486 INFO (MainThread) [homeassistant.components.scene] Setting up homeassistant.scene
+2025-05-10 12:56:32.498 INFO (MainThread) [homeassistant.setup] Setting up input_datetime
+2025-05-10 12:56:32.499 INFO (MainThread) [homeassistant.setup] Setup of domain input_datetime took 0.00 seconds
+2025-05-10 12:56:32.500 INFO (MainThread) [homeassistant.setup] Setting up schedule
+2025-05-10 12:56:32.500 INFO (MainThread) [homeassistant.setup] Setup of domain schedule took 0.00 seconds
+2025-05-10 12:56:32.600 INFO (MainThread) [homeassistant.setup] Setup of domain stream took 0.12 seconds
+2025-05-10 12:56:32.601 INFO (MainThread) [homeassistant.setup] Setting up radio_browser
+2025-05-10 12:56:32.601 INFO (MainThread) [homeassistant.setup] Setup of domain radio_browser took 0.00 seconds
+2025-05-10 12:56:32.602 INFO (MainThread) [homeassistant.setup] Setting up tag
+2025-05-10 12:56:32.603 INFO (MainThread) [homeassistant.setup] Setup of domain tag took 0.00 seconds
+2025-05-10 12:56:32.603 INFO (MainThread) [homeassistant.setup] Setting up google_translate
+2025-05-10 12:56:32.603 INFO (MainThread) [homeassistant.setup] Setup of domain google_translate took 0.00 seconds
+2025-05-10 12:56:32.604 INFO (MainThread) [homeassistant.setup] Setting up input_text
+2025-05-10 12:56:32.604 INFO (MainThread) [homeassistant.setup] Setup of domain input_text took 0.00 seconds
+2025-05-10 12:56:32.605 INFO (MainThread) [homeassistant.setup] Setting up application_credentials
+2025-05-10 12:56:32.605 INFO (MainThread) [homeassistant.setup] Setup of domain application_credentials took 0.00 seconds
+2025-05-10 12:56:32.673 INFO (MainThread) [homeassistant.setup] Setting up sonos
+2025-05-10 12:56:32.673 INFO (MainThread) [homeassistant.setup] Setup of domain sonos took 0.00 seconds
+2025-05-10 12:56:32.676 INFO (MainThread) [homeassistant.setup] Setting up energy
+2025-05-10 12:56:32.676 INFO (MainThread) [homeassistant.setup] Setup of domain energy took 0.00 seconds
+2025-05-10 12:56:32.678 INFO (MainThread) [homeassistant.setup] Setting up hardware
+2025-05-10 12:56:32.685 INFO (MainThread) [homeassistant.setup] Setup of domain hardware took 0.01 seconds
+2025-05-10 12:56:32.698 INFO (MainThread) [homeassistant.setup] Setting up go2rtc
+2025-05-10 12:56:32.698 INFO (MainThread) [homeassistant.setup] Setup of domain go2rtc took 0.00 seconds
+2025-05-10 12:56:32.698 INFO (MainThread) [homeassistant.setup] Setting up sun
+2025-05-10 12:56:32.698 INFO (MainThread) [homeassistant.setup] Setup of domain sun took 0.00 seconds
+2025-05-10 12:56:32.699 INFO (MainThread) [homeassistant.components.sensor] Setting up sun.sensor
+2025-05-10 12:56:32.703 INFO (MainThread) [homeassistant.setup] Setting up thread
+2025-05-10 12:56:32.703 INFO (MainThread) [homeassistant.setup] Setup of domain thread took 0.00 seconds
+2025-05-10 12:56:32.704 INFO (MainThread) [homeassistant.setup] Setting up homeassistant_alerts
+2025-05-10 12:56:32.704 INFO (MainThread) [homeassistant.setup] Setup of domain homeassistant_alerts took 0.00 seconds
+2025-05-10 12:56:32.704 INFO (MainThread) [homeassistant.setup] Setting up my
+2025-05-10 12:56:32.704 INFO (MainThread) [homeassistant.setup] Setup of domain my took 0.00 seconds
+2025-05-10 12:56:32.939 INFO (MainThread) [homeassistant.setup] Setting up uk_bin_collection
+2025-05-10 12:56:32.940 DEBUG (MainThread) [custom_components.uk_bin_collection] [UKBinCollection] async_setup called with config: {'default_config': {}, 'logger': {'default': 'info', 'logs': {'custom_components.uk_bin_collection': 'debug'}}, 'uk_bin_collection': []}
+2025-05-10 12:56:32.940 DEBUG (MainThread) [custom_components.uk_bin_collection] [UKBinCollection] hass.data[DOMAIN] initialized: {}
+2025-05-10 12:56:32.940 DEBUG (MainThread) [custom_components.uk_bin_collection] [UKBinCollection] Registering manual_refresh service
+2025-05-10 12:56:32.940 DEBUG (MainThread) [custom_components.uk_bin_collection] [UKBinCollection] manual_refresh service registered successfully
+2025-05-10 12:56:32.940 INFO (MainThread) [custom_components.uk_bin_collection] [UKBinCollection] async_setup completed without errors.
+2025-05-10 12:56:32.940 INFO (MainThread) [homeassistant.setup] Setup of domain uk_bin_collection took 0.00 seconds
+2025-05-10 12:56:32.956 INFO (MainThread) [homeassistant.setup] Setting up cast
+2025-05-10 12:56:32.956 INFO (MainThread) [homeassistant.setup] Setup of domain cast took 0.00 seconds
+2025-05-10 12:56:32.957 INFO (MainThread) [homeassistant.setup] Setting up counter
+2025-05-10 12:56:32.957 INFO (MainThread) [homeassistant.setup] Setup of domain counter took 0.00 seconds
+2025-05-10 12:56:32.958 INFO (MainThread) [homeassistant.setup] Setting up shopping_list
+2025-05-10 12:56:32.959 INFO (MainThread) [homeassistant.setup] Setup of domain shopping_list took 0.00 seconds
+2025-05-10 12:56:32.960 INFO (MainThread) [homeassistant.setup] Setting up met
+2025-05-10 12:56:32.960 INFO (MainThread) [homeassistant.setup] Setup of domain met took 0.00 seconds
+2025-05-10 12:56:32.968 INFO (MainThread) [homeassistant.setup] Setting up mobile_app
+2025-05-10 12:56:32.968 INFO (MainThread) [homeassistant.setup] Setting up notify
+2025-05-10 12:56:32.968 INFO (MainThread) [homeassistant.setup] Setup of domain notify took 0.00 seconds
+2025-05-10 12:56:32.969 INFO (MainThread) [homeassistant.setup] Setup of domain mobile_app took 0.00 seconds
+2025-05-10 12:56:32.969 INFO (MainThread) [homeassistant.components.notify] Setting up notify.mobile_app
+2025-05-10 12:56:32.969 INFO (MainThread) [homeassistant.setup] Setting up default_config
+2025-05-10 12:56:32.969 INFO (MainThread) [homeassistant.setup] Setup of domain default_config took 0.00 seconds
+2025-05-10 12:56:32.972 INFO (MainThread) [homeassistant.components.tts] Setting up google_translate.tts
+2025-05-10 12:56:33.077 INFO (MainThread) [homeassistant.setup] Setting up binary_sensor
+2025-05-10 12:56:33.077 INFO (MainThread) [homeassistant.setup] Setup of domain binary_sensor took 0.00 seconds
+2025-05-10 12:56:33.077 INFO (MainThread) [homeassistant.components.binary_sensor] Setting up sonos.binary_sensor
+2025-05-10 12:56:33.077 INFO (MainThread) [homeassistant.setup] Setting up media_player
+2025-05-10 12:56:33.078 INFO (MainThread) [homeassistant.setup] Setup of domain media_player took 0.00 seconds
+2025-05-10 12:56:33.078 INFO (MainThread) [homeassistant.components.media_player] Setting up sonos.media_player
+2025-05-10 12:56:33.079 INFO (MainThread) [homeassistant.setup] Setting up number
+2025-05-10 12:56:33.079 INFO (MainThread) [homeassistant.setup] Setup of domain number took 0.00 seconds
+2025-05-10 12:56:33.079 INFO (MainThread) [homeassistant.components.number] Setting up sonos.number
+2025-05-10 12:56:33.079 INFO (MainThread) [homeassistant.components.sensor] Setting up sonos.sensor
+2025-05-10 12:56:33.079 INFO (MainThread) [homeassistant.setup] Setting up switch
+2025-05-10 12:56:33.079 INFO (MainThread) [homeassistant.setup] Setup of domain switch took 0.00 seconds
+2025-05-10 12:56:33.079 INFO (MainThread) [homeassistant.components.switch] Setting up sonos.switch
+2025-05-10 12:56:33.079 INFO (MainThread) [homeassistant.components.sensor] Setting up energy.sensor
+2025-05-10 12:56:33.081 INFO (MainThread) [homeassistant.setup] Setting up analytics
+2025-05-10 12:56:33.081 INFO (MainThread) [homeassistant.setup] Setup of domain analytics took 0.00 seconds
+2025-05-10 12:56:33.085 INFO (MainThread) [homeassistant.components.media_player] Setting up cast.media_player
+2025-05-10 12:56:33.085 INFO (MainThread) [homeassistant.setup] Setting up todo
+2025-05-10 12:56:33.085 INFO (MainThread) [homeassistant.setup] Setup of domain todo took 0.00 seconds
+2025-05-10 12:56:33.085 INFO (MainThread) [homeassistant.components.todo] Setting up shopping_list.todo
+2025-05-10 12:56:33.150 INFO (MainThread) [homeassistant.setup] Setting up weather
+2025-05-10 12:56:33.150 INFO (MainThread) [homeassistant.setup] Setup of domain weather took 0.00 seconds
+2025-05-10 12:56:33.150 INFO (MainThread) [homeassistant.components.weather] Setting up met.weather
+2025-05-10 12:56:33.372 INFO (MainThread) [homeassistant.bootstrap] Home Assistant initialized in 1.50s
+2025-05-10 12:56:33.372 INFO (MainThread) [homeassistant.core] Starting Home Assistant
+2025-05-10 12:56:33.377 INFO (SyncWorker_4) [homeassistant.loader] Loaded ipp from homeassistant.components.ipp
+2025-05-10 12:56:33.377 INFO (SyncWorker_7) [homeassistant.loader] Loaded ibeacon from homeassistant.components.ibeacon
+2025-05-10 12:56:33.377 INFO (SyncWorker_6) [homeassistant.loader] Loaded hue from homeassistant.components.hue
+2025-05-10 12:56:33.377 INFO (SyncWorker_1) [homeassistant.loader] Loaded elgato from homeassistant.components.elgato
+2025-05-10 12:56:33.383 INFO (SyncWorker_2) [homeassistant.loader] Loaded bluetooth_adapters from homeassistant.components.bluetooth_adapters
+2025-05-10 12:56:33.413 INFO (SyncWorker_4) [homeassistant.loader] Loaded apple_tv from homeassistant.components.apple_tv
+2025-05-10 12:56:33.592 INFO (MainThread) [homeassistant.setup] Setting up bluetooth_adapters
+2025-05-10 12:56:53.332 INFO (SyncWorker_1) [homeassistant.loader] Loaded energenie_power_sockets from homeassistant.components.energenie_power_sockets
+2025-05-10 12:56:53.333 INFO (SyncWorker_1) [homeassistant.loader] Loaded growatt_server from homeassistant.components.growatt_server
+2025-05-10 12:56:53.334 INFO (SyncWorker_1) [homeassistant.loader] Loaded local_calendar from homeassistant.components.local_calendar
+2025-05-10 12:56:53.334 INFO (SyncWorker_1) [homeassistant.loader] Loaded moehlenhoff_alpha2 from homeassistant.components.moehlenhoff_alpha2
+2025-05-10 12:56:53.335 INFO (SyncWorker_1) [homeassistant.loader] Loaded mold_indicator from homeassistant.components.mold_indicator
+2025-05-10 12:56:53.336 INFO (SyncWorker_1) [homeassistant.loader] Loaded trend from homeassistant.components.trend
+2025-05-10 12:56:53.336 INFO (SyncWorker_1) [homeassistant.loader] Loaded proximity from homeassistant.components.proximity
+2025-05-10 12:56:53.337 INFO (SyncWorker_1) [homeassistant.loader] Loaded nmap_tracker from homeassistant.components.nmap_tracker
+2025-05-10 12:56:53.337 INFO (SyncWorker_1) [homeassistant.loader] Loaded remote_calendar from homeassistant.components.remote_calendar
+2025-05-10 12:56:53.338 INFO (SyncWorker_1) [homeassistant.loader] Loaded threshold from homeassistant.components.threshold
+2025-05-10 12:56:53.338 INFO (SyncWorker_1) [homeassistant.loader] Loaded zodiac from homeassistant.components.zodiac
+2025-05-10 12:56:53.339 INFO (SyncWorker_1) [homeassistant.loader] Loaded min_max from homeassistant.components.min_max
+2025-05-10 12:56:53.339 INFO (SyncWorker_1) [homeassistant.loader] Loaded alert from homeassistant.components.alert
+2025-05-10 12:56:53.340 INFO (SyncWorker_1) [homeassistant.loader] Loaded demo from homeassistant.components.demo
+2025-05-10 12:56:53.341 INFO (SyncWorker_1) [homeassistant.loader] Loaded garages_amsterdam from homeassistant.components.garages_amsterdam
+2025-05-10 12:56:53.342 INFO (SyncWorker_1) [homeassistant.loader] Loaded group from homeassistant.components.group
+2025-05-10 12:56:53.343 INFO (SyncWorker_1) [homeassistant.loader] Loaded workday from homeassistant.components.workday
+2025-05-10 12:56:53.343 INFO (SyncWorker_1) [homeassistant.loader] Loaded cpuspeed from homeassistant.components.cpuspeed
+2025-05-10 12:56:53.344 INFO (SyncWorker_1) [homeassistant.loader] Loaded history_stats from homeassistant.components.history_stats
+2025-05-10 12:56:53.345 INFO (SyncWorker_1) [homeassistant.loader] Loaded google_travel_time from homeassistant.components.google_travel_time
+2025-05-10 12:56:53.346 INFO (SyncWorker_1) [homeassistant.loader] Loaded utility_meter from homeassistant.components.utility_meter
+2025-05-10 12:56:53.347 INFO (SyncWorker_1) [homeassistant.loader] Loaded version from homeassistant.components.version
+2025-05-10 12:56:53.347 INFO (SyncWorker_1) [homeassistant.loader] Loaded cert_expiry from homeassistant.components.cert_expiry
+2025-05-10 12:56:53.348 INFO (SyncWorker_1) [homeassistant.loader] Loaded local_ip from homeassistant.components.local_ip
+2025-05-10 12:56:53.348 INFO (SyncWorker_1) [homeassistant.loader] Loaded homekit_controller from homeassistant.components.homekit_controller
+2025-05-10 12:56:53.349 INFO (SyncWorker_1) [homeassistant.loader] Loaded generic_thermostat from homeassistant.components.generic_thermostat
+2025-05-10 12:56:53.349 INFO (SyncWorker_1) [homeassistant.loader] Loaded filter from homeassistant.components.filter
+2025-05-10 12:56:53.350 INFO (SyncWorker_1) [homeassistant.loader] Loaded rpi_power from homeassistant.components.rpi_power
+2025-05-10 12:56:53.350 INFO (SyncWorker_1) [homeassistant.loader] Loaded islamic_prayer_times from homeassistant.components.islamic_prayer_times
+2025-05-10 12:56:53.351 INFO (SyncWorker_1) [homeassistant.loader] Loaded nextbus from homeassistant.components.nextbus
+2025-05-10 12:56:53.352 INFO (SyncWorker_1) [homeassistant.loader] Loaded derivative from homeassistant.components.derivative
+2025-05-10 12:56:53.352 INFO (SyncWorker_1) [homeassistant.loader] Loaded holiday from homeassistant.components.holiday
+2025-05-10 12:56:53.352 INFO (SyncWorker_1) [homeassistant.loader] Loaded local_todo from homeassistant.components.local_todo
+2025-05-10 12:56:53.353 INFO (SyncWorker_1) [homeassistant.loader] Loaded moon from homeassistant.components.moon
+2025-05-10 12:56:53.353 INFO (SyncWorker_1) [homeassistant.loader] Loaded generic_hygrostat from homeassistant.components.generic_hygrostat
+2025-05-10 12:56:53.354 INFO (SyncWorker_1) [homeassistant.loader] Loaded random from homeassistant.components.random
+2025-05-10 12:56:53.354 INFO (SyncWorker_1) [homeassistant.loader] Loaded generic from homeassistant.components.generic
+2025-05-10 12:56:53.354 INFO (SyncWorker_1) [homeassistant.loader] Loaded emulated_roku from homeassistant.components.emulated_roku
+2025-05-10 12:56:53.355 INFO (SyncWorker_1) [homeassistant.loader] Loaded plant from homeassistant.components.plant
+2025-05-10 12:56:53.355 INFO (SyncWorker_1) [homeassistant.loader] Loaded time_date from homeassistant.components.time_date
+2025-05-10 12:56:53.356 INFO (SyncWorker_1) [homeassistant.loader] Loaded integration from homeassistant.components.integration
+2025-05-10 12:56:53.356 INFO (SyncWorker_1) [homeassistant.loader] Loaded waze_travel_time from homeassistant.components.waze_travel_time
+2025-05-10 12:56:53.357 INFO (SyncWorker_1) [homeassistant.loader] Loaded statistics from homeassistant.components.statistics
+2025-05-10 12:56:53.357 INFO (SyncWorker_1) [homeassistant.loader] Loaded uptime from homeassistant.components.uptime
+2025-05-10 12:56:53.358 INFO (SyncWorker_1) [homeassistant.loader] Loaded aurora from homeassistant.components.aurora
+2025-05-10 12:56:53.359 INFO (SyncWorker_1) [homeassistant.loader] Loaded filesize from homeassistant.components.filesize
+2025-05-10 12:56:53.359 INFO (SyncWorker_1) [homeassistant.loader] Loaded season from homeassistant.components.season
+2025-05-10 12:56:53.359 INFO (SyncWorker_1) [homeassistant.loader] Loaded tod from homeassistant.components.tod
+2025-05-10 12:56:56.192 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Loaded and sorted 337 councils (with aliases)
+2025-05-10 12:56:56.194 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Loaded council data: ['AberdeenCityCouncil', 'AberdeenshireCouncil', 'AdurAndWorthingCouncils', 'AmberValleyBoroughCouncil', 'AngusCouncil', 'AntrimAndNewtonabbeyCouncil', 'ArdsAndNorthDownCouncil', 'ArgyllandButeCouncil', 'ArmaghBanbridgeCraigavonCouncil', 'ArunCouncil', 'AshfieldDistrictCouncil', 'AshfordBoroughCouncil', 'AylesburyValeCouncil', 'BCPCouncil', 'BaberghDistrictCouncil', 'BarkingDagenham', 'BarnetCouncil', 'BarnsleyMBCouncil', 'BasildonCouncil', 'BasingstokeCouncil', 'BathAndNorthEastSomersetCouncil', 'BedfordBoroughCouncil', 'BedfordshireCouncil', 'BelfastCityCouncil', 'BexleyCouncil', 'BirminghamCityCouncil', 'BlabyDistrictCouncil', 'BlackburnCouncil', 'BlaenauGwentCountyBoroughCouncil', 'BolsoverCouncil', 'BoltonCouncil', 'BostonBoroughCouncil', 'BracknellForestCouncil', 'BradfordMDC', 'BraintreeDistrictCouncil', 'BrecklandCouncil', 'BrentCouncil', 'BrentwoodBoroughCouncil', 'BrightonandHoveCityCouncil', 'BristolCityCouncil', 'BroadlandDistrictCouncil', 'BromleyBoroughCouncil', 'BromsgroveDistrictCouncil', 'BroxbourneCouncil', 'BroxtoweBoroughCouncil', 'BuckinghamshireCouncil', 'BurnleyBoroughCouncil', 'BuryCouncil', 'CalderdaleCouncil', 'CambridgeCityCouncil', 'CannockChaseDistrictCouncil', 'CanterburyCityCouncil', 'CardiffCouncil', 'CarmarthenshireCountyCouncil', 'CastlepointDistrictCouncil', 'CeredigionCountyCouncil', 'CharnwoodBoroughCouncil', 'ChelmsfordCityCouncil', 'CheltenhamBoroughCouncil', 'CherwellDistrictCouncil', 'CheshireEastCouncil', 'CheshireWestAndChesterCouncil', 'ChesterfieldBoroughCouncil', 'ChichesterDistrictCouncil', 'ChorleyCouncil', 'ClackmannanshireCouncil', 'ColchesterCityCouncil', 'ConwyCountyBorough', 'CopelandBoroughCouncil', 'CornwallCouncil', 'CotswoldDistrictCouncil', 'CoventryCityCouncil', 'CrawleyBoroughCouncil', 'CroydonCouncil', 'CumberlandAllerdaleCouncil', 'CumberlandCouncil', 'DacorumBoroughCouncil', 'DartfordBoroughCouncil', 'DenbighshireCouncil', 'DerbyCityCouncil', 'DerbyshireDalesDistrictCouncil', 'DerryAndStrabaneDistrictCouncil', 'DoncasterCouncil', 'DorsetCouncil', 'DoverDistrictCouncil', 'DudleyCouncil', 'DundeeCityCouncil', 'DurhamCouncil', 'EalingCouncil', 'EastAyrshireCouncil', 'EastCambridgeshireCouncil', 'EastDevonDC', 'EastDunbartonshireCouncil', 'EastHampshireCountyCouncil', 'EastHertsCouncil', 'EastLindseyDistrictCouncil', 'EastLothianCouncil', 'EastRenfrewshireCouncil', 'EastRidingCouncil', 'EastStaffordshireBoroughCouncil', 'EastSuffolkCouncil', 'EastleighBoroughCouncil', 'EdinburghCityCouncil', 'ElmbridgeBoroughCouncil', 'EnfieldCouncil', 'EnvironmentFirst', 'EppingForestDistrictCouncil', 'EpsomandEwellBoroughCouncil', 'ErewashBoroughCouncil', 'ExeterCityCouncil', 'FalkirkCouncil', 'FarehamBoroughCouncil', 'FenlandDistrictCouncil', 'FermanaghOmaghDistrictCouncil', 'FifeCouncil', 'FlintshireCountyCouncil', 'FolkstoneandHytheDistrictCouncil', 'ForestOfDeanDistrictCouncil', 'FyldeCouncil', 'GatesheadCouncil', 'GedlingBoroughCouncil', 'GlasgowCityCouncil', 'GloucesterCityCouncil', 'GooglePublicCalendarCouncil', 'GraveshamBoroughCouncil', 'GreatYarmouthBoroughCouncil', 'GuildfordCouncil', 'GwyneddCouncil', 'HackneyCouncil', 'HaltonBoroughCouncil', 'HarboroughDistrictCouncil', 'HaringeyCouncil', 'HarrogateBoroughCouncil', 'HartDistrictCouncil', 'HartlepoolBoroughCouncil', 'HastingsBoroughCouncil', 'HavantBoroughCouncil', 'HerefordshireCouncil', 'HertsmereBoroughCouncil', 'HighPeakCouncil', 'HighlandCouncil', 'Hillingdon', 'HinckleyandBosworthBoroughCouncil', 'HorshamDistrictCouncil', 'HullCityCouncil', 'HuntingdonDistrictCouncil', 'HyndburnBoroughCouncil', 'IpswichBoroughCouncil', 'IsleOfWightCouncil', 'IslingtonCouncil', 'KingsLynnandWestNorfolkBC', 'KingstonUponThamesCouncil', 'KirkleesCouncil', 'KnowsleyMBCouncil', 'LancasterCityCouncil', 'LeedsCityCouncil', 'LeicesterCityCouncil', 'LichfieldDistrictCouncil', 'LincolnCouncil', 'LisburnCastlereaghCityCouncil', 'LiverpoolCityCouncil', 'LondonBoroughEaling', 'LondonBoroughHarrow', 'LondonBoroughHavering', 'LondonBoroughHounslow', 'LondonBoroughLambeth', 'LondonBoroughLewisham', 'LondonBoroughOfRichmondUponThames', 'LondonBoroughRedbridge', 'LondonBoroughSutton', 'LutonBoroughCouncil', 'MaldonDistrictCouncil', 'MalvernHillsDC', 'ManchesterCityCouncil', 'MansfieldDistrictCouncil', 'MedwayCouncil', 'MeltonBoroughCouncil', 'MertonCouncil', 'MidAndEastAntrimBoroughCouncil', 'MidDevonCouncil', 'MidSuffolkDistrictCouncil', 'MidSussexDistrictCouncil', 'MidUlsterDistrictCouncil', 'MiddlesbroughCouncil', 'MidlothianCouncil', 'MiltonKeynesCityCouncil', 'MoleValleyDistrictCouncil', 'MonmouthshireCountyCouncil', 'MorayCouncil', 'NeathPortTalbotCouncil', 'NewForestCouncil', 'NewarkAndSherwoodDC', 'NewcastleCityCouncil', 'NewcastleUnderLymeCouncil', 'NewhamCouncil', 'NewportCityCouncil', 'NewryMourneAndDownDistrictCouncil', 'NorthAyrshireCouncil', 'NorthDevonCountyCouncil', 'NorthEastDerbyshireDistrictCouncil', 'NorthEastLincs', 'NorthHertfordshireDistrictCouncil', 'NorthKestevenDistrictCouncil', 'NorthLanarkshireCouncil', 'NorthLincolnshireCouncil', 'NorthNorfolkDistrictCouncil', 'NorthNorthamptonshireCouncil', 'NorthSomersetCouncil', 'NorthTynesideCouncil', 'NorthWarwickshireBoroughCouncil', 'NorthWestLeicestershire', 'NorthYorkshire', 'NorthumberlandCouncil', 'NorwichCityCouncil', 'NottinghamCityCouncil', 'NuneatonBedworthBoroughCouncil', 'OadbyAndWigstonBoroughCouncil', 'OldhamCouncil', 'OxfordCityCouncil', 'PembrokeshireCountyCouncil', 'PendleBoroughCouncil', 'PerthAndKinrossCouncil', 'PeterboroughCityCouncil', 'PlymouthCouncil', 'PortsmouthCityCouncil', 'PowysCouncil', 'PrestonCityCouncil', 'ReadingBoroughCouncil', 'RedcarandClevelandCouncil', 'RedditchBoroughCouncil', 'ReigateAndBansteadBoroughCouncil', 'RenfrewshireCouncil', 'RhonddaCynonTaffCouncil', 'RibbleValleyCouncil', 'RochdaleCouncil', 'RochfordCouncil', 'RotherDistrictCouncil', 'RotherhamCouncil', 'RoyalBoroughofGreenwich', 'RugbyBoroughCouncil', 'RunnymedeBoroughCouncil', 'RushcliffeBoroughCouncil', 'RushmoorCouncil', 'SalfordCityCouncil', 'SandwellBoroughCouncil', 'SeftonCouncil', 'SevenoaksDistrictCouncil', 'SheffieldCityCouncil', 'ShropshireCouncil', 'SloughBoroughCouncil', 'SolihullCouncil', 'SomersetCouncil', 'SouthAyrshireCouncil', 'SouthCambridgeshireCouncil', 'SouthDerbyshireDistrictCouncil', 'SouthGloucestershireCouncil', 'SouthHamsDistrictCouncil', 'SouthHollandDistrictCouncil', 'SouthKestevenDistrictCouncil', 'SouthLanarkshireCouncil', 'SouthNorfolkCouncil', 'SouthOxfordshireCouncil', 'SouthRibbleCouncil', 'SouthStaffordshireDistrictCouncil', 'SouthTynesideCouncil', 'SouthamptonCityCouncil', 'SouthwarkCouncil', 'SpelthorneBoroughCouncil', 'StAlbansCityAndDistrictCouncil', 'StHelensBC', 'StaffordBoroughCouncil', 'StaffordshireMoorlandsDistrictCouncil', 'StevenageBoroughCouncil', 'StirlingCouncil', 'StockportBoroughCouncil', 'StocktonOnTeesCouncil', 'StokeOnTrentCityCouncil', 'StratfordUponAvonCouncil', 'StroudDistrictCouncil', 'SunderlandCityCouncil', 'SurreyHeathBoroughCouncil', 'SwaleBoroughCouncil', 'SwanseaCouncil', 'SwindonBoroughCouncil', 'TamesideMBCouncil', 'TandridgeDistrictCouncil', 'TeignbridgeCouncil', 'TelfordAndWrekinCouncil', 'TendringDistrictCouncil', 'TestValleyBoroughCouncil', 'TewkesburyBoroughCouncil', 'ThanetDistrictCouncil', 'ThreeRiversDistrictCouncil', 'ThurrockCouncil', 'TonbridgeAndMallingBC', 'TorbayCouncil', 'TorfaenCountyBoroughCouncil', 'TorridgeDistrictCouncil', 'TraffordCouncil', 'TunbridgeWellsCouncil', 'UttlesfordDistrictCouncil', 'ValeofGlamorganCouncil', 'ValeofWhiteHorseCouncil', 'WakefieldCityCouncil', 'WalsallCouncil', 'WalthamForest', 'WandsworthCouncil', 'WarringtonBoroughCouncil', 'WarwickDistrictCouncil', 'WatfordBoroughCouncil', 'WaverleyBoroughCouncil', 'WealdenDistrictCouncil', 'WelhatCouncil', 'WestBerkshireCouncil', 'WestDunbartonshireCouncil', 'WestLancashireBoroughCouncil', 'WestLindseyDistrictCouncil', 'WestLothianCouncil', 'WestMorlandAndFurness', 'WestNorthamptonshireCouncil', 'WestOxfordshireDistrictCouncil', 'WestSuffolkCouncil', 'WestmorlAndFurnessCouncil', 'WiganBoroughCouncil', 'WiltshireCouncil', 'WinchesterCityCouncil', 'WindsorAndMaidenheadCouncil', 'WirralCouncil', 'WokingBoroughCouncil', 'WokinghamBoroughCouncil', 'WolverhamptonCityCouncil', 'WorcesterCityCouncil', 'WrexhamCountyBoroughCouncil', 'WychavonDistrictCouncil', 'WyreCouncil', 'WyreForestDistrictCouncil', 'YorkCouncil']
+2025-05-10 12:56:56.194 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Retrieving property info for location: 50.825770, -0.126353
+2025-05-10 12:56:56.407 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Retrieved property info - Street: West Drive, Ward: Queen's Park, Postcode: BN2 0QU, LAD24CD: E06000043, Town: Brighton
+2025-05-10 12:56:56.407 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Found LAD code: E06000043
+2025-05-10 12:56:56.407 INFO (MainThread) [custom_components.uk_bin_collection.config_flow] Found matching council: Brighton and Hove for LAD code: E06000043
+2025-05-10 12:56:56.407 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Using street name as default name: West Drive
+2025-05-10 12:56:56.407 INFO (MainThread) [custom_components.uk_bin_collection.config_flow] Pre-selecting detected council: Brighton and Hove
+2025-05-10 12:56:57.321 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] User input received: {'name': 'West Drive', 'council': 'Brighton and Hove'}
+2025-05-10 12:56:57.321 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Mapped wiki name 'Brighton and Hove' to council key 'BrightonandHoveCityCouncil'.
+2025-05-10 12:56:57.321 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] User input after mapping: {'name': 'West Drive', 'council': 'BrightonandHoveCityCouncil'}
+2025-05-10 12:56:57.321 INFO (MainThread) [custom_components.uk_bin_collection.config_flow] Wiki note for BrightonandHoveCityCouncil: 'Use house number and postcode. Requires Selenium'
+2025-05-10 12:56:57.321 DEBUG (MainThread) [custom_components.uk_bin_collection.config_flow] Using property postcode as default: BN2 0QU
+2025-05-10 12:56:57.321 INFO (MainThread) [custom_components.uk_bin_collection.config_flow] Adding wiki note to description
