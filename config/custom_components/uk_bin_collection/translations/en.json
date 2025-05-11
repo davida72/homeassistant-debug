@@ -4,15 +4,15 @@
         "step": {
             "user": {
                 "title": "UK Bin Collection",
-                "description": "Set up UK Bin Collection integration. {detected_council}",
+                "description": "{step1_description}",
                 "data": {
                     "name": "Location name",
                     "council": "Council"
-                },
+                }
             },
             "council_info": {
                 "title": "Council Information",
-                "description": "Please provide the required information for {council_name}",
+                "description": "{step2_description}",
                 "data": {
                     "url": "URL to fetch bin collection data",
                     "uprn": "UPRN (Unique Property Reference Number)",
@@ -20,7 +20,7 @@
                     "number": "House number of the address",
                     "usrn": "USRN (Unique Street Reference Number)",
                     "no_config_required": "No additional configuration required"
-                },
+                }
             },
             "selenium": {
                 "title": "Selenium Configuration",
