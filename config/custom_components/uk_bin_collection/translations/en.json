@@ -4,7 +4,7 @@
         "step": {
             "user": {
                 "title": "UK Bin Collection",
-                "description": "{step1_description}",
+                "description": "{step_user_description}",
                 "data": {
                     "name": "Location name",
                     "council": "Council"
@@ -12,7 +12,7 @@
             },
             "council_info": {
                 "title": "Council Information",
-                "description": "{step2_description}",
+                "description": "{step_council_info_description}",
                 "data": {
                     "url": "URL to fetch bin collection data",
                     "uprn": "UPRN (Unique Property Reference Number)",
@@ -26,10 +26,10 @@
                 "title": "Selenium Configuration",
                 "data": {
                     "web_driver": "To run on a remote Selenium Server add the Selenium Server URL",
-                    "headless": "Run Selenium in headless mode (recommended)",
-                    "local_browser": "Don't run on remote Selenium server, use local install of Chrome instead"
+                    "headless": "Run Selenium in headless mode (recommended).",
+                    "local_browser": "Use local Chromnium browser instead of Selenium."
                 },
-                "description": "{step3_description}}"
+                "description": "{step_selenium_description}"
             },
             "advanced": {
                 "title": "Advanced Configuration",

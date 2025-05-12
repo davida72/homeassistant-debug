@@ -13,7 +13,6 @@ from .utils import (
     is_valid_json,
     get_councils_json,
     map_wiki_name_to_council_key,
-    perform_selenium_checks,
     check_selenium_server,
     async_entry_exists,
     check_chromium_installed
@@ -144,13 +143,13 @@ async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
         try:
             detected_wiki_name = self.councils_data[self.detected_council]["wiki_name"]
             default_council = detected_wiki_name
-            description_placeholders["step1_description"] = f"Based on your location, we detected {detected_wiki_name}."
+            description_placeholders["step_user_description"] = f"Based on your location, we detected {detected_wiki_name}."
             _LOGGER.info("Pre-selecting detected council: %s", detected_wiki_name)
         except (KeyError, IndexError):
             _LOGGER.warning("Could not get wiki_name for detected council: %s", self.detected_council)
-            description_placeholders["step1_description"] = f"Please [contact us](https://github.com/robbrad/UKBinCollectionData#requesting-your-council) if your council isn't listed"
+            description_placeholders["step_user_description"] = f"Please [contact us](https://github.com/robbrad/UKBinCollectionData#requesting-your-council) if your council isn't listed"
     else:
-        description_placeholders["step1_description"] = f"Please [contact us](https://github.com/robbrad/UKBinCollectionData#requesting-your-council) if your council isn't listed."
+        description_placeholders["step_user_description"] = f"Please [contact us](https://github.com/robbrad/UKBinCollectionData#requesting-your-council) if your council isn't listed."
 
     return self.async_show_form(
         step_id="user",
@@ -170,10 +169,9 @@ async def async_step_council_info(self, user_input=None):
                 
     council_key = self.data.get("council")
     council_info = self.councils_data.get(council_key, {})
-    
-    # Get wiki info if available - use consistent variable name
-    wiki_note = council_info.get("wiki_note", "")
-    _LOGGER.info("Wiki note for %s: '%s'", council_key, wiki_note)  # Log the actual value
+    wiki_name = council_info.get("wiki_name", "Unknown Council")
+    self.data["wiki_name"] = wiki_name
+    _LOGGER.info("Wiki note for %s: '%s'", council_key, wiki_name)  # Log the actual value
 
     if user_input is not None:
         # If there are no errors, just save data and proceed
@@ -213,19 +211,19 @@ async def async_step_council_info(self, user_input=None):
     # This ensures the form is displayed with at least something on it
     if not schema_fields:
         schema_fields[vol.Optional("no_config_required", default=True)] = bool
-        step2_description = "No additional configuration required for this council."
+        step_council_info_description = "No additional configuration required for this council."
     else:
-        if wiki_note: 
-            step2_description = wiki_note
+        if wiki_name: 
+            step_council_info_description = wiki_name
         else:
-            step2_description = f"Please provide the required information for {council_info.get('wiki_name', council_key)}."
+            step_council_info_description = f"Please provide the required information for {council_info.get('wiki_name', council_key)}."
 
     schema = vol.Schema(schema_fields)
     
     # Set description placeholders
     description_placeholders = {
         "council_name": council_info.get("wiki_name", council_key),
-        "step2_description": step2_description,
+        "step_council_info_description": step_council_info_description,
     }
     
     return self.async_show_form(
@@ -238,65 +236,61 @@ async def async_step_council_info(self, user_input=None):
 async def async_step_selenium(self, user_input=None):
     """Step 3: Selenium configuration (if needed)."""
     errors = {}
-    messages = []
 
-    wiki_name = self.data.get("wiki_name")
-    messages.append(f"<b>{wiki_name}</b> requires Selenium to run.<br><br>")
+    # Add a message about Selenium requirement
+    wiki_name = self.data.get("wiki_name", "Unknown Council")
 
-    """Check if Selenium servers in the list are accessible."""
+    # Check if Selenium servers in the list are accessible
     urls = SELENIUM_SERVER_URLS.copy()
-
-    results = []
+    selenium_results = []
     for url in urls:
         result = await check_selenium_server(url)
-        results.append(result)
-    return results
+        selenium_results.append(result)
 
-    # Perform selenium checks
-    selenium_url = await perform_selenium_checks()
-    if selenium_url:
-        self.selenium_available = True
-        self.selenium_checked = True
-        _LOGGER.info("Working Selenium URL: %s", selenium_url)
-    else:
-        _LOGGER.warning("No accessible Selenium server found.")
-
+    # Determine if any Selenium server is accessible
+    selenium_url = None
+    for url, accessible in selenium_results:
+        if accessible:
+            selenium_url = url  # Use the first accessible URL
+            _LOGGER.info("Defaulting web_driver to accessible Selenium URL: %s", selenium_url)
+            break
+        else:
+            _LOGGER.warning("No accessible Selenium server found. Defaulting web_driver to an empty string.")
+            selenium_url = ""  # Fallback to an empty string if no server is accessible
+            
     # Chromium installation check
     chromium_installed = await check_chromium_installed()
-    if chromium_installed:
-        chromium_status = "✅ Installed"
+    if (chromium_installed):
         _LOGGER.info("Chromium is installed.")
     else:
-        chromium_status = "❌ Not installed"
         _LOGGER.warning("Chromium is not installed.")
 
-    # Add Chromium status to messages
-    messages = []
-    messages.append("<br><b>Local Chromium browser check:</b><br>")
-    messages.append(f"Chromium browser is {chromium_status}.")
+    # If user input is provided, validate and update self.data
+    if user_input:
+        # Validate user input (if needed)
+        # Add validation logic here if required
 
-    # Update self.data with selenium configuration
-    self.data.update(user_input)
-    return await self.async_step_advanced()
+        # Update self.data with user input
+        self.data.update(user_input)
+        return await self.async_step_advanced()
 
-    # Build form
+    # Build the form schema
     schema = vol.Schema({
-        vol.Optional("web_driver", default=""): cv.string,
+        vol.Optional("web_driver", default=selenium_url): cv.string,
         vol.Optional("headless", default=True): bool,
         vol.Optional("local_browser", default=False): bool,
     })
     
-    description_placeholders = {
-        "step3_description": messages,
-    }
+    description_placeholders = {"step_selenium_description": f"<b>{wiki_name}</b> requires [Selenium](https://github.com/robbrad/UKBinCollectionData?tab=readme-ov-file#selenium) to run."}
     
+    # Show the form
     return self.async_show_form(
         step_id="selenium",
         data_schema=schema,
         errors=errors,
         description_placeholders=description_placeholders,
     )
-    
+
 async def async_step_advanced(self, user_input=None):
     """Step 4: Advanced configuration."""
     errors = {}

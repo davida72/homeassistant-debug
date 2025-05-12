@@ -26,22 +26,6 @@ def is_valid_json(json_str: str) -> bool:
 
 """Selenium and browser-related functions"""
 
-async def perform_selenium_checks(custom_selenium_url: Optional[str]) -> Optional[str]:
-    """Perform Selenium checks and return a working Selenium URL or None."""
-    if not custom_selenium_url:
-        _LOGGER.warning("No Selenium URL provided.")
-        return None
-
-    # Perform the actual Selenium checks
-    selenium_results = await check_selenium_servers(custom_selenium_url)
-    for url, accessible in selenium_results:
-        if accessible:
-            _LOGGER.info("Found accessible Selenium server: %s", url)
-            return url  # Return the first accessible URL
-
-    _LOGGER.warning("No accessible Selenium server found.")
-    return None
-
 async def check_chromium_installed() -> bool:
     """Check if Chromium is installed."""
     loop = asyncio.get_event_loop()
