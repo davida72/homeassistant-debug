@@ -182,8 +182,8 @@ async def async_step_council_info(self, user_input=None):
             _LOGGER.debug("Using property postcode as default: %s", default_values["postcode"])
     
     # Add fields based on council requirements
-    if not council_info.get("skip_get_url", False):
-        schema_fields[vol.Required("url")] = cv.string
+    if "wiki_command_url_override" in council_info:
+        schema_fields[vol.Required("url", default=council_info.get("wiki_command_url_override", ""))] = cv.string
     if "uprn" in council_info:
         schema_fields[vol.Required("uprn")] = cv.string
     if "postcode" in council_info:
