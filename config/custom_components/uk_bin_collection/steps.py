@@ -7,13 +7,20 @@ import logging
 
 _LOGGER = logging.getLogger(__name__) 
 
+from .utils import (
+    is_valid_json,
+    get_councils_json,
+    map_wiki_name_to_council_key,
+    perform_selenium_checks,
+    async_entry_exists
+)
 
 async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
     """Step 1: Basic info - name and council selection."""
     errors = {}
 
     if self.councils_data is None:
-        self.councils_data = await self.get_councils_json()
+        self.councils_data = await get_councils_json()
         if not self.councils_data:
             _LOGGER.error("Council data is unavailable.")
             return self.async_abort(reason="Council Data Unavailable")
@@ -29,7 +36,7 @@ async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
             # Check if latitude and longitude are available and valid
             lat = self.hass.config.latitude
             lng = self.hass.config.longitude
-            
+
             if (lat is None or lng is None or lat == 0.0 and lng == 0.0):
                 _LOGGER.warning("Home Assistant location not configured, skipping property info retrieval")
                 self.property_info = None
@@ -70,7 +77,7 @@ async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
 
         # Check for duplicate entries
         if not errors:
-            existing_entry = await self._async_entry_exists(user_input)
+            existing_entry = await async_entry_exists(self, user_input)
             if existing_entry:
                 errors["base"] = "duplicate_entry"
                 _LOGGER.warning(
@@ -79,7 +86,11 @@ async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
 
         if not errors:
             # Map selected wiki_name back to council key
-            council_key = self.map_wiki_name_to_council_key(user_input["council"])
+            council_key = map_wiki_name_to_council_key(
+                user_input["council"],
+                self.council_options,
+                self.council_names
+            )
             if not council_key:
                 errors["council"] = "Invalid council selected."
                 return self.async_show_form(
@@ -135,7 +146,7 @@ async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
             _LOGGER.warning("Could not get wiki_name for detected council: %s", self.detected_council)
             description_placeholders["step1_description"] = f"Please [contact us](https://github.com/robbrad/UKBinCollectionData#requesting-your-council) if your council isn't listed"
     else:
-        description_placeholders["step1_description"] = ""
+        description_placeholders["step1_description"] = f"Please [contact us](https://github.com/robbrad/UKBinCollectionData#requesting-your-council) if your council isn't listed."
 
     return self.async_show_form(
         step_id="user",
@@ -237,8 +248,15 @@ async def async_step_selenium(self, user_input=None):
             return await self.async_step_advanced()
             
     # Perform selenium checks
-    selenium_message = await self.perform_selenium_checks(council_key)
-    
+    selenium_message, selenium_available, chromium_installed = await perform_selenium_checks(
+        council_key,
+        self.councils_data,
+        self.data
+    )
+    self.selenium_available = selenium_available
+    self.selenium_checked = True
+    self.chromium_installed = chromium_installed
+
     # Build form
     schema = vol.Schema({
         vol.Optional("web_driver", default=""): cv.string,
@@ -274,7 +292,7 @@ async def async_step_advanced(self, user_input=None):
                 
         # Validate JSON mapping if provided
         if user_input.get("icon_color_mapping"):
-            if not self.is_valid_json(user_input["icon_color_mapping"]):
+            if not is_valid_json(user_input["icon_color_mapping"]):
                 errors["icon_color_mapping"] = "invalid_json"
                 
         if not errors:
@@ -297,6 +315,10 @@ async def async_step_advanced(self, user_input=None):
         vol.Optional("icon_color_mapping", default=""): cv.string,
     })        
     
+    description_placeholders = {
+        "advanced_description": "Configure advanced settings for your bin collection."
+    }
+
     return self.async_show_form(
         step_id="advanced",
         data_schema=schema,

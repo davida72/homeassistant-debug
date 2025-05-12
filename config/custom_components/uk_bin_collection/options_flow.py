@@ -1,5 +1,15 @@
+from typing import Dict, Any, Optional
+import logging
 from homeassistant import config_entries
-from .utils import get_councils_json
+
+from .utils import (
+    is_valid_json,
+    get_councils_json,
+    build_options_schema,
+    map_wiki_name_to_council_key,
+)
+
+_LOGGER = logging.getLogger(__name__)
 
 class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for UkBinCollection."""
@@ -17,7 +27,7 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
         existing_data = self.config_entry.data
 
         # Fetch council data
-        self.councils_data = await self.get_councils_json()
+        self.councils_data = await get_councils_json()
         if not self.councils_data:
             _LOGGER.error("Council data is unavailable for options flow.")
             return self.async_abort(reason="Council Data Unavailable")
@@ -31,7 +41,11 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
         if user_input is not None:
             _LOGGER.debug("Options flow user input: %s", user_input)
             # Map selected wiki_name back to council key
-            council_key = self.map_wiki_name_to_council_key(user_input["council"])
+            council_key = map_wiki_name_to_council_key(
+                user_input["council"],
+                self.council_options,
+                self.council_names
+            )
             user_input["council"] = council_key
 
             # Validate update_interval
@@ -46,9 +60,7 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
 
             # Validate JSON mapping if provided
             if user_input.get("icon_color_mapping"):
-                if not UkBinCollectionConfigFlow.is_valid_json(
-                    user_input["icon_color_mapping"]
-                ):
+                if not is_valid_json(user_input["icon_color_mapping"]):
                     errors["icon_color_mapping"] = "Invalid JSON format."
 
             if user_input.get("manual_refresh_only"):
@@ -71,7 +83,11 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
                 _LOGGER.debug("Errors in options flow: %s", errors)
 
         # Build the form with existing data
-        schema = self.build_options_schema(existing_data)
+        schema = build_options_schema(
+            existing_data,
+            self.council_options,
+            self.council_names
+        )
 
         return self.async_show_form(
             step_id="init",
