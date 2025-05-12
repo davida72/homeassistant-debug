@@ -29,7 +29,7 @@
                     "headless": "Run Selenium in headless mode (recommended)",
                     "local_browser": "Don't run on remote Selenium server, use local install of Chrome instead"
                 },
-                "description": "{selenium_message}"
+                "description": "{step3_description}}"
             },
             "advanced": {
                 "title": "Advanced Configuration",

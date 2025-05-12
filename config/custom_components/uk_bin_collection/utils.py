@@ -26,34 +26,21 @@ def is_valid_json(json_str: str) -> bool:
 
 """Selenium and browser-related functions"""
 
-async def perform_selenium_checks(council_key: str, councils_data: Dict, data: Dict) -> str:
-    """Perform Selenium and Chromium checks and return a formatted message."""
-    messages = []
-    council_info = councils_data.get(council_key, {})
-    council_name = council_info.get("wiki_name", council_key)
+async def perform_selenium_checks(custom_selenium_url: Optional[str]) -> Optional[str]:
+    """Perform Selenium checks and return a working Selenium URL or None."""
+    if not custom_selenium_url:
+        _LOGGER.warning("No Selenium URL provided.")
+        return None
 
-    custom_selenium_url = data.get("selenium_url")
-    selenium_results = await check_selenium_server(custom_selenium_url)
-    selenium_available = any(accessible for _, accessible in selenium_results)
-
-    chromium_installed = await check_chromium_installed()
-
-    # Start building the message with formatted HTML
-    messages.append(f"<b>{council_name}</b> requires Selenium to run.<br><br>")
-
-    # Selenium server check results
-    messages.append("<b>Remote Selenium server URLs checked:</b><br>")
+    # Perform the actual Selenium checks
+    selenium_results = await check_selenium_servers(custom_selenium_url)
     for url, accessible in selenium_results:
-        status = "✅ Accessible" if accessible else "❌ Not accessible"
-        messages.append(f"{url}: {status}<br>")
+        if accessible:
+            _LOGGER.info("Found accessible Selenium server: %s", url)
+            return url  # Return the first accessible URL
 
-    # Chromium installation check
-    chromium_status = "✅ Installed" if chromium_installed else "❌ Not installed"
-    messages.append("<br><b>Local Chromium browser check:</b><br>")
-    messages.append(f"Chromium browser is {chromium_status}.")
-
-    # Return results as a tuple - message and status flags
-    return "".join(messages), selenium_available, chromium_installed
+    _LOGGER.warning("No accessible Selenium server found.")
+    return None
 
 async def check_chromium_installed() -> bool:
     """Check if Chromium is installed."""
@@ -65,32 +52,21 @@ async def check_chromium_installed() -> bool:
         _LOGGER.warning("Chromium is not installed.")
     return result
 
-async def check_selenium_server(custom_url: Optional[str] = None) -> List[tuple]:
-    """Check if Selenium servers are accessible."""
-    urls = SELENIUM_SERVER_URLS.copy()
-    if custom_url:
-        urls.insert(0, custom_url)
-
-    results = []
+async def check_selenium_server(url: str) -> tuple:
+    """Check if a single Selenium server is accessible."""
     async with aiohttp.ClientSession() as session:
-        for url in urls:
-            try:
-                async with session.get(url, timeout=5) as response:
-                    response.raise_for_status()
-                    accessible = response.status == 200
-                    results.append((url, accessible))
-                    _LOGGER.debug("Selenium server %s is accessible.", url)
-            except aiohttp.ClientError as e:
-                _LOGGER.warning(
-                    "Failed to connect to Selenium server at %s: %s", url, e
-                )
-                results.append((url, False))
-            except Exception as e:
-                _LOGGER.exception(
-                    "Unexpected error checking Selenium server at %s: %s", url, e
-                )
-                results.append((url, False))
-    return results
+        try:
+            async with session.get(url, timeout=5) as response:
+                response.raise_for_status()
+                accessible = response.status == 200
+                _LOGGER.debug("Selenium server %s is accessible.", url)
+                return url, accessible
+        except aiohttp.ClientError as e:
+            _LOGGER.warning("Failed to connect to Selenium server at %s: %s", url, e)
+            return url, False
+        except Exception as e:
+            _LOGGER.exception("Unexpected error checking Selenium server at %s: %s", url, e)
+            return url, False
 
 def _sync_check_chromium() -> bool:
     """Synchronous check for Chromium installation."""

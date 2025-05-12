@@ -35,6 +35,7 @@ class UkBinCollectionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self.selenium_checked = False
         self.selenium_available = False
 
+
     # step 1 - get name and council
     async def async_step_user(self, user_input=None):
         return await async_step_user(self, user_input)

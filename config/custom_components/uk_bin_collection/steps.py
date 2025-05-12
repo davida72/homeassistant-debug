@@ -5,6 +5,8 @@ from homeassistant import config_entries
 from .property_info import async_get_property_info
 import logging
 
+from .const import SELENIUM_SERVER_URLS
+
 _LOGGER = logging.getLogger(__name__) 
 
 from .utils import (
@@ -12,7 +14,9 @@ from .utils import (
     get_councils_json,
     map_wiki_name_to_council_key,
     perform_selenium_checks,
-    async_entry_exists
+    check_selenium_server,
+    async_entry_exists,
+    check_chromium_installed
 )
 
 async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
@@ -234,28 +238,46 @@ async def async_step_council_info(self, user_input=None):
 async def async_step_selenium(self, user_input=None):
     """Step 3: Selenium configuration (if needed)."""
     errors = {}
-        
-    council_key = self.data.get("council")
-    
-    if user_input is not None:
-            
-        # Validate selenium inputs
-        # Add validation logic here if needed
-        
-        if not errors:
-            # Update self.data with selenium configuration
-            self.data.update(user_input)
-            return await self.async_step_advanced()
-            
+    messages = []
+
+    wiki_name = self.data.get("wiki_name")
+    messages.append(f"<b>{wiki_name}</b> requires Selenium to run.<br><br>")
+
+    """Check if Selenium servers in the list are accessible."""
+    urls = SELENIUM_SERVER_URLS.copy()
+
+    results = []
+    for url in urls:
+        result = await check_selenium_server(url)
+        results.append(result)
+    return results
+
     # Perform selenium checks
-    selenium_message, selenium_available, chromium_installed = await perform_selenium_checks(
-        council_key,
-        self.councils_data,
-        self.data
-    )
-    self.selenium_available = selenium_available
-    self.selenium_checked = True
-    self.chromium_installed = chromium_installed
+    selenium_url = await perform_selenium_checks()
+    if selenium_url:
+        self.selenium_available = True
+        self.selenium_checked = True
+        _LOGGER.info("Working Selenium URL: %s", selenium_url)
+    else:
+        _LOGGER.warning("No accessible Selenium server found.")
+
+    # Chromium installation check
+    chromium_installed = await check_chromium_installed()
+    if chromium_installed:
+        chromium_status = "✅ Installed"
+        _LOGGER.info("Chromium is installed.")
+    else:
+        chromium_status = "❌ Not installed"
+        _LOGGER.warning("Chromium is not installed.")
+
+    # Add Chromium status to messages
+    messages = []
+    messages.append("<br><b>Local Chromium browser check:</b><br>")
+    messages.append(f"Chromium browser is {chromium_status}.")
+
+    # Update self.data with selenium configuration
+    self.data.update(user_input)
+    return await self.async_step_advanced()
 
     # Build form
     schema = vol.Schema({
@@ -265,7 +287,7 @@ async def async_step_selenium(self, user_input=None):
     })
     
     description_placeholders = {
-        "selenium_message": selenium_message,
+        "step3_description": messages,
     }
     
     return self.async_show_form(
