@@ -69,37 +69,116 @@ def _sync_check_chromium() -> bool:
 
 """Schema building functions"""
 
-def get_council_schema(council: str, councils_data: Dict) -> vol.Schema:
-    """Generate the form schema based on council requirements."""
-    council_info = councils_data.get(council, {})
+def build_user_schema(council_options: List[str], default_council: Optional[str] = None, default_name: str = "") -> vol.Schema:
+    """Build schema for the user step.
+    
+    Args:
+        council_options: List of council names to display in the dropdown
+        default_council: Optional default selection for council dropdown
+        default_name: Optional default value for name field
+        
+    Returns:
+        Schema object for the user configuration form
+    """
+    return vol.Schema(
+        {
+            vol.Required("name", default=default_name): cv.string,
+            vol.Required("council", default=default_council): vol.In(council_options),
+        }
+    )
+
+def build_council_schema(council_key: str, councils_data: Dict, default_values: Optional[Dict] = None) -> Dict:
+    """Build schema fields for council-specific information with defaults.
+    
+    Args:
+        council_key: The council key to look up in councils_data
+        councils_data: Dictionary containing council configuration data
+        default_values: Optional dictionary of default values to pre-populate fields
+        
+    Returns:
+        Dictionary of schema fields
+    """
+    if default_values is None:
+        default_values = {}
+        
+    council_info = councils_data.get(council_key, {})
     fields = {}
-
-    if not council_info.get("skip_get_url", False) or council_info.get(
-        "custom_component_show_url_field"
-    ):
-        fields[vol.Required("url")] = cv.string
+    
+    # Add required fields based on council requirements
+    if council_info.get("wiki_command_url_override"):
+        url_default = default_values.get("url", "")  # Get default URL from default_values
+        fields[vol.Required("url", default=url_default)] = cv.string
+        
     if "uprn" in council_info:
+        # uprn_default = default_values.get("uprn", "")
         fields[vol.Required("uprn")] = cv.string
+        
     if "postcode" in council_info:
-        fields[vol.Required("postcode")] = cv.string
+        postcode_default = default_values.get("postcode", "")
+        fields[vol.Required("postcode", default=postcode_default)] = cv.string
+        
     if "house_number" in council_info:
+        # number_default = default_values.get("number", "")
         fields[vol.Required("number")] = cv.string
+        
     if "usrn" in council_info:
+        # usrn_default = default_values.get("usrn", "")
         fields[vol.Required("usrn")] = cv.string
-    if "web_driver" in council_info:
-        fields[vol.Optional("web_driver", default="")] = cv.string
-        fields[vol.Optional("headless", default=True)] = bool
-        fields[vol.Optional("local_browser", default=False)] = bool
+    
+    # Return fields dictionary, not a Schema
+    return fields
 
-    fields[vol.Optional("timeout", default=60)] = vol.All(
-        vol.Coerce(int), vol.Range(min=10)
-    )
+def build_selenium_schema(selenium_url=None, default_options=None) -> vol.Schema:
+    """Build schema for selenium step.
+    
+    Args:
+        selenium_url: Default URL for the selenium webdriver
+        default_options: List of default selected options for selenium configuration
+                        (e.g., ["Headless Mode"])
+        
+    Returns:
+        Schema object for the selenium configuration form
+    """
+    if default_options is None:
+        default_options = ["Headless Mode"]
+        
+    # Ensure selenium_url is a string, even if None
+    if selenium_url is None:
+        selenium_url = ""
+    
+    # Debug log the URL we're using
+    import logging
+    _LOGGER = logging.getLogger(__name__)
+    _LOGGER.debug("Building selenium schema with URL: '%s'", selenium_url)
+    
+    # Create the schema with proper defaults
+    return vol.Schema({
+        vol.Optional("web_driver", default=selenium_url): vol.Coerce(str),
+        vol.Optional("selenium_options", default=default_options): cv.multi_select({
+            "Headless Mode": "Run in Headless Mode (Recommended)",
+            "Use Local Browser": "Use Local Chromium Browser instead of Selenium"
+        }),
+    })
 
-    fields[vol.Optional("update_interval", default=12)] = vol.All(
-        cv.positive_int, vol.Range(min=1)
-    )
-
-    return vol.Schema(fields)
+def build_advanced_schema() -> vol.Schema:
+    """Build schema for advanced step.
+    
+    Args:
+        None
+        
+    Returns:
+        Schema object for the advanced configuration form with default values
+    """
+    return vol.Schema({
+        vol.Optional("manual_refresh_only", default=True): bool,
+        vol.Optional("update_interval", default=12): vol.All(
+            cv.positive_int, vol.Range(min=1)
+        ),
+        vol.Optional("timeout", default=60): vol.All(
+            vol.Coerce(int), vol.Range(min=10)
+        ),
+        vol.Optional("icon_color_mapping", default=""): cv.string,
+    })
 
 def build_reconfigure_schema(
     existing_data: Dict[str, Any], council_wiki_name: str, council_options: List[str]
@@ -139,29 +218,6 @@ def build_reconfigure_schema(
         )
     ] = str
 
-    return vol.Schema(fields)
-
-def build_council_info_schema(council_key: str, councils_data: Dict) -> vol.Schema:
-    """Build schema for council-specific information."""
-    council_info = councils_data.get(council_key, {})
-    fields = {}
-    
-    # Add required fields based on council requirements
-    if not council_info.get("skip_get_url", False):
-        fields[vol.Required("url")] = cv.string
-    if "uprn" in council_info:
-        fields[vol.Required("uprn")] = cv.string
-    if "postcode" in council_info:
-        fields[vol.Required("postcode")] = cv.string
-    if "house_number" in council_info:
-        fields[vol.Required("number")] = cv.string
-    if "usrn" in council_info:
-        fields[vol.Required("usrn")] = cv.string
-        
-    # Return schema with the fields or an empty schema if no fields
-    if not fields:
-        fields[vol.Optional("none_required", default=True)] = vol.Boolean(False)
-        
     return vol.Schema(fields)
 
 def build_options_schema(
@@ -208,13 +264,11 @@ async def get_councils_json(url: str = None) -> Dict[str, Any]:
     Fetch and return the supported councils data, including aliases and sorted alphabetically.
     
     Args:
-        url: URL to fetch councils data from. If None, uses the default URL.
+        url: URL to fetch councils data from.
     
     Returns:
         Dictionary of council data.
     """
-    if url is None:
-        url = "https://raw.githubusercontent.com/robbrad/UKBinCollectionData/0.152.0/uk_bin_collection/tests/input.json"
     
     try:
         async with aiohttp.ClientSession() as session:

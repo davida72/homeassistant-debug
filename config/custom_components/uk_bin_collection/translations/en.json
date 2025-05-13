@@ -28,13 +28,7 @@
                 "data": {
                     "web_driver": "To run on a remote Selenium server add the Selenium server URL",
                     "selenium_options": "Selenium Options"
-                },
-                "error": {
-                    "chromium_not_installed": "Local Chromium selected but not installed",
-                    "no_selenium_method": "Please provide a Selenium URL or enable Local Browser",
-                    "selenium_not_accessible": "The Selenium server URL provided is not accessible"
-                }
-            },
+                }            },
             "advanced": {
                 "title": "Advanced Configuration",
                 "data": {
@@ -49,8 +43,8 @@
         "error": {
             "name": "Please enter a location name",
             "council": "Please select a council",
-            "selenium_unavailable": "❌ Selenium server is not accessible. Please ensure it is running at http://localhost:4444 or http://selenium:4444. [Setup Guide](https://example.com/selenium-setup)",
-            "chromium_not_found": "❌ Chromium browser is not installed. Please install Chromium or Google Chrome. [Installation Guide](https://example.com/chromium-install)",
+            "selenium_unavailable": "Selenium URL is not available",
+            "chromium_unavailable": "Chromium not installed",
             "duplicate_entry": "An entry with the same name or data already exists.",
             "invalid_json": "Invalid JSON format."
         },

@@ -15,7 +15,11 @@ from .utils import (
     map_wiki_name_to_council_key,
     check_selenium_server,
     async_entry_exists,
-    check_chromium_installed
+    check_chromium_installed,
+    build_user_schema,
+    build_council_schema,
+    build_selenium_schema,
+    build_advanced_schema
 )
 
 async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
@@ -23,7 +27,9 @@ async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
     errors = {}
 
     if self.councils_data is None:
-        self.councils_data = await get_councils_json()
+        
+        # Load council data from the JSON file
+        self.councils_data = await get_councils_json("https://raw.githubusercontent.com/robbrad/UKBinCollectionData/0.152.0/uk_bin_collection/tests/input.json")
         if not self.councils_data:
             _LOGGER.error("Council data is unavailable.")
             return self.async_abort(reason="Council Data Unavailable")
@@ -32,7 +38,7 @@ async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
         self.council_options = [
             self.councils_data[name]["wiki_name"] for name in self.council_names
         ]
-        _LOGGER.debug("Loaded council data: %s", self.council_names)
+        _LOGGER.debug("Loaded %d councils, options: %s", len(self.council_names), self.council_options[:5])
         
         # Get property info from the Home Assistant location
         try:
@@ -151,14 +157,16 @@ async def async_step_user(self, user_input: Optional[Dict[str, Any]] = None):
     else:
         description_placeholders["step_user_description"] = f"Please [contact us](https://github.com/robbrad/UKBinCollectionData#requesting-your-council) if your council isn't listed."
 
+    # Use the schema building function from utils
+    schema = build_user_schema(
+        council_options=self.council_options, 
+        default_council=default_council, 
+        default_name=default_name
+    )
+
     return self.async_show_form(
         step_id="user",
-        data_schema=vol.Schema(
-            {
-                vol.Required("name", default=default_name): cv.string,
-                vol.Required("council", default=default_council): vol.In(self.council_options),
-            }
-        ),
+        data_schema=schema,
         errors=errors,
         description_placeholders=description_placeholders,
     )
@@ -171,7 +179,7 @@ async def async_step_council_info(self, user_input=None):
     council_info = self.councils_data.get(council_key, {})
     wiki_name = council_info.get("wiki_name", "Unknown Council")
     self.data["wiki_name"] = wiki_name
-    _LOGGER.info("Wiki note for %s: '%s'", council_key, wiki_name)  # Log the actual value
+    _LOGGER.info("Wiki note for %s: '%s'", council_key, wiki_name)
 
     if user_input is not None:
         # If there are no errors, just save data and proceed
@@ -181,50 +189,51 @@ async def async_step_council_info(self, user_input=None):
         else:
             return await self.async_step_advanced()
     
-    # Build schema with council-specific fields
-    schema_fields = {}
-    
-    # Set default values
+    # Prepare default values
     default_values = {}
     
-    # If we have property info, use it to set defaults
+    # Check if the council has a URL override and should show the URL field
+    if council_info.get("wiki_command_url_override"):
+        default_values["url"] = council_info.get("wiki_command_url_override")
+        _LOGGER.debug("Using default URL from wiki_command_url_override: %s", default_values["url"])
+    
+    # Then, add default values from property_info if available
     if hasattr(self, 'property_info') and self.property_info:
-        # Set default postcode if available and required by council
-        if "postcode" in council_info and self.property_info.get("postcode"):
-            default_values["postcode"] = self.property_info["postcode"]
-            _LOGGER.debug("Using property postcode as default: %s", default_values["postcode"])
+        # Map property info to default values
+        property_mapping = {
+            "postcode": "postcode",
+            # Add other mappings as needed
+        }
+        
+        for form_field, property_field in property_mapping.items():
+            if property_field in self.property_info:
+                default_values[form_field] = self.property_info[property_field]
+                _LOGGER.debug("Using default %s = %s from property_info", form_field, default_values[form_field])
     
-    # Add fields based on council requirements
-    if "wiki_command_url_override" in council_info:
-        schema_fields[vol.Required("url", default=council_info.get("wiki_command_url_override", ""))] = cv.string
-    if "uprn" in council_info:
-        schema_fields[vol.Required("uprn")] = cv.string
-    if "postcode" in council_info:
-        default_postcode = default_values.get("postcode", "")
-        schema_fields[vol.Required("postcode", default=default_postcode)] = cv.string
-    if "house_number" in council_info:
-        schema_fields[vol.Required("number")] = cv.string
-    if "usrn" in council_info:
-        schema_fields[vol.Required("usrn")] = cv.string
+    # Debug log all default values to see what's being sent to the schema builder
+    _LOGGER.info("Default values for council info form: %s", default_values)
     
-    # Always include a dummy field if no fields were added
-    # This ensures the form is displayed with at least something on it
+    # Get schema fields with defaults applied
+    schema_fields = build_council_schema(council_key, self.councils_data, default_values)
+    
+    # Initialize step description
     if not schema_fields:
         schema_fields[vol.Optional("no_config_required", default=True)] = bool
         step_council_info_description = "No additional configuration required for this council."
     else:
-        if wiki_name: 
-            step_council_info_description = wiki_name
-        else:
-            step_council_info_description = f"Please provide the required information for {council_info.get('wiki_name', council_key)}."
-
+        wiki_note = council_info.get("wiki_note", "")
+        step_council_info_description = f"{wiki_note}"
+    
+    # Create the schema
     schema = vol.Schema(schema_fields)
     
     # Set description placeholders
     description_placeholders = {
-        "council_name": council_info.get("wiki_name", council_key),
+        "council_name": wiki_name,
         "step_council_info_description": step_council_info_description,
     }
+    
+    _LOGGER.debug("Council info schema with defaults: %s", schema_fields)
     
     return self.async_show_form(
         step_id="council_info",
@@ -255,16 +264,23 @@ async def async_step_selenium(self, user_input=None):
     for url, accessible in selenium_results:
         if accessible:
             selenium_url = url
+            _LOGGER.debug("Found accessible Selenium server: %s", selenium_url)
             break
-        else:
-            selenium_url = ""
+
+    # If selenium_url is still None after checking, set it to empty string
+    if selenium_url is None:
+        selenium_url = ""
+        _LOGGER.debug("No accessible Selenium server found, using empty string")
+
+    # Log what URL we'll use as default
+    _LOGGER.info("Setting default Selenium URL to: '%s'", selenium_url)
 
     # Determine if Chromium is accessible
     chromium_installed = await check_chromium_installed()
 
     # If user input is provided, validate and update self.data
     if user_input:
-        # Map the multi-select back to booleans (reverse the hack)
+        # Map the multi-select back to booleans
         user_input["headless"] = "Headless Mode" in user_input["selenium_options"]
         user_input["local_browser"] = "Use Local Browser" in user_input["selenium_options"]
         
@@ -280,7 +296,7 @@ async def async_step_selenium(self, user_input=None):
                 has_valid_selenium = True
                 _LOGGER.info("Using local Chromium browser")
             else:
-                errors["base"] = "Chromnium not installed"
+                errors["base"] = "chromium_unavailable"
                 _LOGGER.error("Local Chromium browser selected but not installed")
         else:
             # Check if the user-provided Selenium URL is accessible
@@ -292,7 +308,7 @@ async def async_step_selenium(self, user_input=None):
                     has_valid_selenium = True
                     _LOGGER.info("User-provided Selenium server is accessible")
                 else:
-                    errors["base"] = "Selenium URL not accessible"
+                    errors["base"] = "selenium_unavailable"
                     _LOGGER.error(f"Provided Selenium URL {user_selenium_url} is not accessible")
             else:
                 errors["base"] = "no_selenium_method"
@@ -304,20 +320,14 @@ async def async_step_selenium(self, user_input=None):
             self.data.update(user_input)
             return await self.async_step_advanced()
 
-    # Schema with multi-select for logical grouping
-    schema = vol.Schema({
-        vol.Optional("web_driver", default=selenium_url): cv.string,
-        vol.Optional("selenium_options", default=["Headless Mode"]): cv.multi_select({
-            "Headless Mode": "Run in Headless Mode (Recommended)",
-            "Use Local Browser": "Use Local Chromium Browser instead of Selenium"
-        }),
-    })
+    # Use the schema building function from utils with explicitly defined URL
+    schema = build_selenium_schema(selenium_url=selenium_url, default_options=["Headless Mode"])
     
     # Description placeholder
     description_placeholders = {
         "step_selenium_description": (
             f"<b>{wiki_name}</b> requires "
-            f"<a href='https://github.com/robbrad/UKBinCollectionData?tab=readme-ov-file#selenium' target='_blank'>Selenium</a> to run."
+            f"<a href='https://github.com/robbrad/UKBinCollectionData?tab=readme-ov-file#selenium' target='_blank'>Selenium</a> or Chromium to run."
         )
     }
  
@@ -357,18 +367,9 @@ async def async_step_advanced(self, user_input=None):
             _LOGGER.info("Creating config entry with data: %s", self.data)
             return self.async_create_entry(title=self.data["name"], data=self.data)
     
-    # Build advanced schema
-    schema = vol.Schema({
-        vol.Optional("manual_refresh_only", default=True): bool,
-        vol.Optional("update_interval", default=12): vol.All(
-            cv.positive_int, vol.Range(min=1)
-        ),
-        vol.Optional("timeout", default=60): vol.All(
-            vol.Coerce(int), vol.Range(min=10)
-        ),
-        vol.Optional("icon_color_mapping", default=""): cv.string,
-    })        
-    
+    # Use the schema building function from utils
+    schema = build_advanced_schema()
+
     description_placeholders = {
         "advanced_description": "Configure advanced settings for your bin collection."
     }
