@@ -280,7 +280,7 @@ async def async_step_selenium(self, user_input=None):
                 has_valid_selenium = True
                 _LOGGER.info("Using local Chromium browser")
             else:
-                errors["base"] = "chromium_not_installed"
+                errors["base"] = "Chromnium not installed"
                 _LOGGER.error("Local Chromium browser selected but not installed")
         else:
             # Check if the user-provided Selenium URL is accessible
@@ -292,7 +292,7 @@ async def async_step_selenium(self, user_input=None):
                     has_valid_selenium = True
                     _LOGGER.info("User-provided Selenium server is accessible")
                 else:
-                    errors["web_driver"] = "selenium_not_accessible"
+                    errors["base"] = "Selenium URL not accessible"
                     _LOGGER.error(f"Provided Selenium URL {user_selenium_url} is not accessible")
             else:
                 errors["base"] = "no_selenium_method"
@@ -318,22 +318,9 @@ async def async_step_selenium(self, user_input=None):
         "step_selenium_description": (
             f"<b>{wiki_name}</b> requires "
             f"<a href='https://github.com/robbrad/UKBinCollectionData?tab=readme-ov-file#selenium' target='_blank'>Selenium</a> to run."
-            f"<br><br><b>Choose one of these options:</b><br>"
-            f"1. Enter a Selenium server URL, OR<br>"
-            f"2. Select 'Use Local Chromium Browser' (Chromium Status: {'Installed ✓' if chromium_installed else 'Not Installed ✗'})"
         )
     }
-
-    # Add error messages to description
-    if "base" in errors:
-        if errors["base"] == "chromium_not_installed":
-            description_placeholders["step_selenium_description"] += "<br><br><b>Error:</b> Local Chromium selected but not installed."
-        elif errors["base"] == "no_selenium_method":
-            description_placeholders["step_selenium_description"] += "<br><br><b>Error:</b> Please provide a Selenium URL or enable Local Browser."
-    
-    if "web_driver" in errors and errors["web_driver"] == "selenium_not_accessible":
-        description_placeholders["step_selenium_description"] += "<br><br><b>Error:</b> The Selenium server URL provided is not accessible."
-
+ 
     # Show the form
     return self.async_show_form(
         step_id="selenium",

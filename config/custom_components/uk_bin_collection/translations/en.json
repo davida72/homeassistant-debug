@@ -28,6 +28,11 @@
                 "data": {
                     "web_driver": "To run on a remote Selenium server add the Selenium server URL",
                     "selenium_options": "Selenium Options"
+                },
+                "error": {
+                    "chromium_not_installed": "Local Chromium selected but not installed",
+                    "no_selenium_method": "Please provide a Selenium URL or enable Local Browser",
+                    "selenium_not_accessible": "The Selenium server URL provided is not accessible"
                 }
             },
             "advanced": {
