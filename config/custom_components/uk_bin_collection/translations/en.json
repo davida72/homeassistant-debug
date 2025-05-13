@@ -24,12 +24,11 @@
             },
             "selenium": {
                 "title": "Selenium Configuration",
+                "description": "{step_selenium_description}",
                 "data": {
-                    "web_driver": "To run on a remote Selenium Server add the Selenium Server URL",
-                    "headless": "Run Selenium in headless mode (recommended).",
-                    "local_browser": "Use local Chromnium browser instead of Selenium."
-                },
-                "description": "{step_selenium_description}"
+                    "web_driver": "To run on a remote Selenium server add the Selenium server URL",
+                    "selenium_options": "Selenium Options"
+                }
             },
             "advanced": {
                 "title": "Advanced Configuration",

@@ -233,6 +233,9 @@ async def async_step_council_info(self, user_input=None):
         description_placeholders=description_placeholders,
     )
 
+import voluptuous as vol
+import homeassistant.helpers.config_validation as cv
+
 async def async_step_selenium(self, user_input=None):
     """Step 3: Selenium configuration (if needed)."""
     errors = {}
@@ -251,38 +254,86 @@ async def async_step_selenium(self, user_input=None):
     selenium_url = None
     for url, accessible in selenium_results:
         if accessible:
-            selenium_url = url  # Use the first accessible URL
-            _LOGGER.info("Defaulting web_driver to accessible Selenium URL: %s", selenium_url)
+            selenium_url = url
             break
         else:
-            _LOGGER.warning("No accessible Selenium server found. Defaulting web_driver to an empty string.")
-            selenium_url = ""  # Fallback to an empty string if no server is accessible
-            
-    # Chromium installation check
+            selenium_url = ""
+
+    # Determine if Chromium is accessible
     chromium_installed = await check_chromium_installed()
-    if (chromium_installed):
-        _LOGGER.info("Chromium is installed.")
-    else:
-        _LOGGER.warning("Chromium is not installed.")
 
     # If user input is provided, validate and update self.data
     if user_input:
-        # Validate user input (if needed)
-        # Add validation logic here if required
+        # Map the multi-select back to booleans (reverse the hack)
+        user_input["headless"] = "Headless Mode" in user_input["selenium_options"]
+        user_input["local_browser"] = "Use Local Browser" in user_input["selenium_options"]
+        
+        # Remove the temporary multi-select key
+        del user_input["selenium_options"]
+        
+        # Validate Selenium access before proceeding to next step
+        has_valid_selenium = False
+        
+        # Check if using local browser and Chromium is installed
+        if user_input["local_browser"]:
+            if chromium_installed:
+                has_valid_selenium = True
+                _LOGGER.info("Using local Chromium browser")
+            else:
+                errors["base"] = "chromium_not_installed"
+                _LOGGER.error("Local Chromium browser selected but not installed")
+        else:
+            # Check if the user-provided Selenium URL is accessible
+            user_selenium_url = user_input.get("web_driver", "")
+            if user_selenium_url.strip():
+                # Test the provided Selenium URL
+                result = await check_selenium_server(user_selenium_url)
+                if result[1]:  # If accessible
+                    has_valid_selenium = True
+                    _LOGGER.info("User-provided Selenium server is accessible")
+                else:
+                    errors["web_driver"] = "selenium_not_accessible"
+                    _LOGGER.error(f"Provided Selenium URL {user_selenium_url} is not accessible")
+            else:
+                errors["base"] = "no_selenium_method"
+                _LOGGER.error("No Selenium method selected (neither URL provided nor local browser enabled)")
+        
+        # If validation passed, update data and proceed to next step
+        if not errors:
+            # Update self.data with user input
+            self.data.update(user_input)
+            return await self.async_step_advanced()
 
-        # Update self.data with user input
-        self.data.update(user_input)
-        return await self.async_step_advanced()
-
-    # Build the form schema
+    # Schema with multi-select for logical grouping
     schema = vol.Schema({
         vol.Optional("web_driver", default=selenium_url): cv.string,
-        vol.Optional("headless", default=True): bool,
-        vol.Optional("local_browser", default=False): bool,
+        vol.Optional("selenium_options", default=["Headless Mode"]): cv.multi_select({
+            "Headless Mode": "Run in Headless Mode (Recommended)",
+            "Use Local Browser": "Use Local Chromium Browser instead of Selenium"
+        }),
     })
     
-    description_placeholders = {"step_selenium_description": f"<b>{wiki_name}</b> requires [Selenium](https://github.com/robbrad/UKBinCollectionData?tab=readme-ov-file#selenium) to run."}
+    # Description placeholder
+    description_placeholders = {
+        "step_selenium_description": (
+            f"<b>{wiki_name}</b> requires "
+            f"<a href='https://github.com/robbrad/UKBinCollectionData?tab=readme-ov-file#selenium' target='_blank'>Selenium</a> to run."
+            f"<br><br><b>Choose one of these options:</b><br>"
+            f"1. Enter a Selenium server URL, OR<br>"
+            f"2. Select 'Use Local Chromium Browser' (Chromium Status: {'Installed ✓' if chromium_installed else 'Not Installed ✗'})"
+        )
+    }
+
+    # Add error messages to description
+    if "base" in errors:
+        if errors["base"] == "chromium_not_installed":
+            description_placeholders["step_selenium_description"] += "<br><br><b>Error:</b> Local Chromium selected but not installed."
+        elif errors["base"] == "no_selenium_method":
+            description_placeholders["step_selenium_description"] += "<br><br><b>Error:</b> Please provide a Selenium URL or enable Local Browser."
     
+    if "web_driver" in errors and errors["web_driver"] == "selenium_not_accessible":
+        description_placeholders["step_selenium_description"] += "<br><br><b>Error:</b> The Selenium server URL provided is not accessible."
+
     # Show the form
     return self.async_show_form(
         step_id="selenium",

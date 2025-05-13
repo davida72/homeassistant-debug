@@ -33,7 +33,7 @@ async def check_chromium_installed() -> bool:
     if result:
         _LOGGER.debug("Chromium is installed.")
     else:
-        _LOGGER.warning("Chromium is not installed.")
+        _LOGGER.debug("Chromium is not installed.")
     return result
 
 async def check_selenium_server(url: str) -> tuple:
