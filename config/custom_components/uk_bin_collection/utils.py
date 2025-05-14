@@ -7,7 +7,10 @@ import shutil
 
 from voluptuous import Schema, Required, Optional
 from typing import List, Dict, Any
+
+from typing import Dict, Any, Optional
 from .const import BROWSER_BINARIES
+from homeassistant import config_entries
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,7 +49,7 @@ async def get_councils_json(url: str) -> Dict[str, Any]:
                 return sorted_data
             
     except Exception as e:
-        _LOGGER.error("Failed to fetch councils data from %s: %s", url, e)
+        _LOGGER.debug("Failed to fetch councils data from %s: %s", url, e)
         return {}
 
 async def check_selenium_server(url: str) -> bool:
@@ -58,7 +61,7 @@ async def check_selenium_server(url: str) -> bool:
                 _LOGGER.debug(f"Selenium server at {url} is {'accessible' if accessible else 'not accessible'}")
                 return accessible
         except Exception as e:
-            _LOGGER.error(f"Error checking Selenium server at {url}: {e}")
+            _LOGGER.debug(f"Error checking Selenium server at {url}: {e}")
             return False
 
 async def check_chromium_installed() -> bool:
@@ -79,7 +82,7 @@ def _sync_check_chromium() -> bool:
                 _LOGGER.debug(f"Found Chromium executable: {exec_name}")
                 return True
         except Exception as e:
-            _LOGGER.error(
+            _LOGGER.debug(
                 f"Exception while checking for executable '{exec_name}': {e}"
             )
             continue  # Continue checking other binaries
@@ -153,5 +156,16 @@ def is_valid_json(json_string: str) -> bool:
         _LOGGER.debug("JSON string is valid.")
         return True
     except ValueError as e:
-        _LOGGER.error(f"Invalid JSON string: {e}")
+        _LOGGER.debug(f"Invalid JSON string: {e}")
         return False
+    
+async def async_entry_exists(
+    flow, user_input: Dict[str, Any]
+) -> Optional[config_entries.ConfigEntry]:
+    """Check if a config entry with the same name or data already exists."""
+    for entry in flow._async_current_entries():
+        if entry.data.get("name") == user_input.get("name"):
+            return entry
+        if entry.data.get("council") == user_input.get("council") and entry.data.get("url") == user_input.get("url"):
+            return entry
+    return None

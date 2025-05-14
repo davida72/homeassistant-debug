@@ -24,7 +24,8 @@ SELENIUM_SERVER_URLS = [
     "http://127.0.0.1:4444/"
 ]
 
-COUNCIL_DATA_URL = "https://raw.githubusercontent.com/robbrad/UKBinCollectionData/0.152.0/uk_bin_collection/tests/input.json"
+# This URL will always be the master version of the JSON file
+COUNCIL_DATA_URL = "https://raw.githubusercontent.com/robbrad/UKBinCollectionData/master/uk_bin_collection/tests/input.json"
 
 BROWSER_BINARIES = ["chromium", "chromium-browser", "google-chrome"]
 

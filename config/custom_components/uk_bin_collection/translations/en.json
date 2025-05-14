@@ -6,8 +6,8 @@
                 "title": "UK Bin Collection",
                 "description": "{step_user_description}",
                 "data": {
-                    "name": "Location name",
-                    "council": "Council"
+                    "name": "Name",
+                    "selected_council": "Council"
                 }
             },
             "council_info": {
@@ -19,16 +19,19 @@
                     "postcode": "Postcode of the address",
                     "number": "House number of the address",
                     "usrn": "USRN (Unique Street Reference Number)",
+                    "house_number": "House number of the address",
                     "no_config_required": "No additional configuration required"
                 }
             },
             "selenium": {
                 "title": "Selenium Configuration",
-                "description": "{step_selenium_description}",
+                "description": "This council requires [Selenium](https://github.com/robbrad/UKBinCollectionData?tab=readme-ov-file#selenium) or Chromium to run",
                 "data": {
-                    "web_driver": "To run on a remote Selenium server add the Selenium server URL",
-                    "selenium_options": "Selenium Options"
-                }            },
+                    "web_driver": "Selenium server URL",
+                    "local_browser": "Use local Chromium browser instead of Selenium",
+                    "headless_mode": "Run in headless mode (recommended)"
+                }            
+            },
             "advanced": {
                 "title": "Advanced Configuration",
                 "data": {
@@ -37,7 +40,7 @@
                     "timeout": "The time in seconds for how long the sensor should wait for data",
                     "icon_color_mapping": "JSON to map Bin Type for Colour and Icon see: https://github.com/robbrad/UKBinCollectionData"
                 },
-                "description": "Configure advanced settings for this integration."
+                "description": "Configure advanced settings for this integration"
             }
         },
         "error": {
@@ -45,11 +48,11 @@
             "council": "Please select a council",
             "selenium_unavailable": "Selenium URL is not available",
             "chromium_unavailable": "Chromium not installed",
-            "duplicate_entry": "An entry with the same name or data already exists.",
-            "invalid_json": "Invalid JSON format."
+            "duplicate_entry": "An entry with the same name or data already exists",
+            "invalid_json": "Invalid JSON format"
         },
         "abort": {
-            "Council Data Unavailable": "Council data is unavailable. Please try again later."
+            "council_data_unavailable": "Council data is unavailable. Please try again later."
         }
     }
 }

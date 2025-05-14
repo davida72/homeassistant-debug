@@ -1,11 +1,15 @@
 from homeassistant import config_entries
 from .initialisation import initialisation_data
+
 import logging
 from .utils import (
     build_user_schema,
     build_council_schema,
     build_selenium_schema,
-    build_advanced_schema
+    build_advanced_schema,
+    async_entry_exists,
+    check_chromium_installed,
+    check_selenium_server,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,10 +33,6 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
         if not self._initialized:
             await initialisation_data(self)
             self._initialized = True
-            _LOGGER.debug("Initialization completed")
-        else:
-            _LOGGER.debug("Using cached initialization data")
-
         
         # Create a mapping of wiki names to council keys
         council_list = self.data.get("council_list", {})
@@ -69,25 +69,45 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
             self.data["selected_wiki_name"] = selected_wiki_name
             self.data["selected_council"] = council_key
             
-            return await self.async_step_council_info()
+
+            # Check for duplicate entries
+            existing_entry = await async_entry_exists(self, user_input)
+            if existing_entry:
+                errors["base"] = "duplicate_entry"
+                _LOGGER.warning(
+                    "Duplicate entry found: %s", existing_entry.data.get("name")
+                )
+            else:
+                return await self.async_step_council_info()
+
+        # Dynamically set the description placeholders
+        description_placeholders = {}
+        if detected_council_name:
+            description_placeholders["step_user_description"] = "Council auto-selected based on location."
+            _LOGGER.debug("Detected council: %s", detected_council_name)
+        else:
+            description_placeholders["step_user_description"] = f"Please [contact us](https://github.com/robbrad/UKBinCollectionData#requesting-your-council) if your council isn't listed."
+            _LOGGER.debug("No council detected.")
 
         return self.async_show_form(
             step_id="user",
             data_schema=schema,
             errors=errors,
-            description_placeholders={
-                "detected_council": detected_council_name or "Not detected",
-                "street_name": default_name or "Not found"
-            }
+            description_placeholders=description_placeholders,
         )
-
+    
     async def async_step_council_info(self, user_input=None):
         """Step 2: Configure Council Information."""
-        
         errors = {}
-        
+
         if user_input is not None:
             self.data.update(user_input)
+            council_key = self.data.get("selected_council", "")
+            council_data = self.data.get("council_list", {}).get(council_key, {})
+
+            # If this council does not require Selenium, skip to advanced
+            if not council_data.get("web_driver"):
+                return await self.async_step_advanced()
             return await self.async_step_selenium()
 
         council_key = self.data.get("selected_council", "")
@@ -99,12 +119,18 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
             "url": wiki_command_url
         }
 
+        wiki_note = council_data.get("wiki_note", "No additional notes available for this council.")
+
+        description_placeholders = {}
+        description_placeholders["step_council_info_description"] = wiki_note
+
         schema = build_council_schema(council_key, council_data, default_values)
 
         return self.async_show_form(
             step_id="council_info",
             data_schema=schema,
-            errors=errors
+            errors=errors,
+            description_placeholders=description_placeholders,
         )
 
     async def async_step_selenium(self, user_input=None):
@@ -112,9 +138,6 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
         
         errors = {}
 
-        # Check if Chromium is installed (only when needed later)
-        from .utils import check_chromium_installed
-        
         # Debug to see what's in self.data
         _LOGGER.debug(f"Selenium step data keys: {list(self.data.keys())}")
         if "selenium_status" in self.data:
@@ -135,45 +158,45 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
             use_local_browser = user_input.get("local_browser", False)
             web_driver_url = user_input.get("web_driver", "").strip()
             
-            # Optimization: Only check what we need based on user choices
-            if use_local_browser:
-                # User selected local browser - check if Chromium is available
+            # Check if Selenium server is accessible
+            if web_driver_url:
+                is_accessible = await check_selenium_server(web_driver_url)
+
+                if is_accessible:
+                    _LOGGER.debug(f"Selected Selenium URL {web_driver_url} is accessible")
+                    # Selenium URL is accessible, proceed to the next step
+                    return await self.async_step_advanced()
+                else:
+                    errors["base"] = "selenium_unavailable"
+                    _LOGGER.debug(f"Selected Selenium URL {web_driver_url} is NOT accessible")
+            elif use_local_browser:
+                # Check if Chromium is installed
                 chromium_installed = await check_chromium_installed()
                 self.data["chromium_installed"] = chromium_installed
-                
-                if not chromium_installed:
+
+                if chromium_installed:
+                    _LOGGER.debug("Local browser selected and Chromium is available")
+                    # Chromium is available, proceed to the next step
+                    return await self.async_step_advanced()
+                else:
                     errors["base"] = "chromium_unavailable"
                     _LOGGER.debug("Local browser selected but Chromium is not installed")
-                else:
-                    _LOGGER.debug("Local browser selected and Chromium is available")
-                    # Local browser is available, we're good to go
-            elif web_driver_url:
-                # User provided a Selenium URL - check if it's accessible
-                from .utils import check_selenium_server
-                is_accessible = await check_selenium_server(web_driver_url)
-                
-                if not is_accessible:
-                    errors["base"] = "selenium_url_unavailable"
-                    _LOGGER.debug(f"Selected Selenium URL {web_driver_url} is NOT accessible")
-                else:
-                    _LOGGER.debug(f"Selected Selenium URL {web_driver_url} is accessible")
-                    # Selenium URL is accessible, we're good to go
             else:
-                # User didn't select either option
-                errors["base"] = "no_selenium_method"
+                # Neither Selenium nor Chromium is available
+                errors["base"] = "selenium_unavailable"
                 _LOGGER.debug("No Selenium method selected (neither URL provided nor local browser enabled)")
-            
+
             # If everything is valid, proceed to the next step
             if not errors:
                 return await self.async_step_advanced()
+
+        description_placeholders = {}
 
         return self.async_show_form(
             step_id="selenium",
             data_schema=schema,
             errors=errors,
-            description_placeholders={
-                "chromium_status": "Available" if self.data.get("chromium_installed", False) else "Not checked"
-            }
+            description_placeholders=description_placeholders,
         )
 
     async def async_step_advanced(self, user_input=None):
