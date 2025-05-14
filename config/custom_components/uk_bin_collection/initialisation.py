@@ -1,7 +1,74 @@
+"""
+# Data Structures Reference
+
+URL Constants:
+    COUNCIL_DATA_URL: str
+        The URL used to fetch the list of councils from the main repository.
+
+    SELENIUM_SERVER_URLS: List[str]
+        A list of URLs for Selenium server instances to be checked for availability.
+
+Data Storage (self.data):
+    "council_list": Dict[str, Dict[str, Any]]
+        Stores all the councils with their metadata.
+        Example:
+        {
+            "AberdeenshireCouncil": {
+                "LAD24CD": "S12000034",
+                "uprn": "151176430",
+                "url": "https://online.aberdeenshire.gov.uk",
+                "wiki_command_url_override": "https://online.aberdeenshire.gov.uk",
+                "wiki_name": "Aberdeenshire",
+                "wiki_note": "You will need to use [FindMyAddress](https://www.findmyaddress.co.uk/search) to find the UPRN."
+            },
+        }
+
+    "property_info": Dict[str, str]
+        Stores property information fetched from Google Maps and Postcodes.io.
+        Example:
+        {
+            "street_name": "High Street",
+            "admin_ward": "Brighton Central",
+            "postcode": "BN1 1AA",
+            "LAD24CD": "E07000223",
+            "postal_town": "Brighton"
+        }
+
+    "detected_council": Optional[str]
+        The auto-detected council from LAD24CD.
+
+    "detected_postcode": Optional[str]
+        The auto-detected postcode from Google Maps.
+
+    "selenium_status": Dict[str, bool]
+        Maps Selenium server URLs to their availability.
+        Example:
+        {
+            "http://localhost:4444/": True,
+            "http://selenium-server:4444/": False
+        }
+
+    "selected_council": Optional[str]
+        The council selected by the user during the configuration flow.
+
+Schemas:
+    user_schema: voluptuous.Schema
+        Schema for user selection of council.
+
+    council_schema: voluptuous.Schema
+        Schema for configuring council-specific information.
+
+    selenium_schema: voluptuous.Schema
+        Schema for configuring Selenium options.
+
+    advanced_schema: voluptuous.Schema
+        Schema for configuring advanced settings like refresh intervals and timeouts.
+"""
+
 import asyncio
 from .utils import get_councils_json, check_selenium_server, check_chromium_installed
 from .property_info import async_get_property_info
-from .const import COUNCIL_DATA_URL
+from .const import COUNCIL_DATA_URL, SELENIUM_SERVER_URLS  # Import SELENIUM_SERVER_URLS
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,6 +118,16 @@ async def initialisation_data(self):
         self.data["property_info"] = None
 
     # Pre-check Selenium Servers
-    urls = self.data.get("SELENIUM_SERVER_URLS", [])
-    selenium_status = {url: await check_selenium_server(url) for url in urls}
-    self.data["selenium_status"] = selenium_status
+    try:
+        _LOGGER.debug(f"Checking Selenium servers: {SELENIUM_SERVER_URLS}")
+        selenium_status = {}
+        
+        for url in SELENIUM_SERVER_URLS:
+            is_available = await check_selenium_server(url)
+            selenium_status[url] = is_available
+            _LOGGER.debug(f"Selenium server {url} is {'available' if is_available else 'unavailable'}")
+        
+        self.data["selenium_status"] = selenium_status
+    except Exception as e:
+        _LOGGER.error(f"Error checking Selenium servers: {e}")
+        self.data["selenium_status"] = {}

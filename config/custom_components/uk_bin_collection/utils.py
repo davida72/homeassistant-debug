@@ -3,8 +3,11 @@ import aiohttp
 import logging
 import asyncio
 import voluptuous as vol
+import shutil
+
 from voluptuous import Schema, Required, Optional
 from typing import List, Dict, Any
+from .const import BROWSER_BINARIES
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,6 +71,21 @@ async def check_chromium_installed() -> bool:
         _LOGGER.debug("Chromium is not installed.")
     return result
 
+def _sync_check_chromium() -> bool:
+    """Synchronous check for Chromium installation."""
+    for exec_name in BROWSER_BINARIES:
+        try:
+            if shutil.which(exec_name):
+                _LOGGER.debug(f"Found Chromium executable: {exec_name}")
+                return True
+        except Exception as e:
+            _LOGGER.error(
+                f"Exception while checking for executable '{exec_name}': {e}"
+            )
+            continue  # Continue checking other binaries
+    _LOGGER.debug("No Chromium executable found.")
+    return False
+
 # -----------------------------------------------------
 # 🔄 Schema Builders
 # -----------------------------------------------------
@@ -106,15 +124,12 @@ def build_selenium_schema(default_url=""):
     """Build schema for Selenium configuration."""
     import homeassistant.helpers.config_validation as cv
     
-    # Create the schema with proper defaults
+    # Create the schema with separate options instead of multi-select
     return vol.Schema({
         vol.Optional("web_driver", default=default_url): vol.Coerce(str),
-        vol.Optional("selenium_options", default=["Headless Mode"]): cv.multi_select({
-            "Headless Mode": "Run in Headless Mode (Recommended)",
-            "Use Local Browser": "Use Local Chromium Browser instead of Selenium"
-        }),
+        vol.Optional("headless_mode", default=True): bool,
+        vol.Optional("local_browser", default=False): bool,
     })
-
 
 def build_advanced_schema() -> Schema:
     """Schema for advanced settings configuration."""
