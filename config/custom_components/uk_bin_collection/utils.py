@@ -1,274 +1,19 @@
 import json
-import logging
-import shutil
-import asyncio
-from typing import Any, Dict, List, Optional
-
 import aiohttp
-import homeassistant.helpers.config_validation as cv
+import logging
+import asyncio
 import voluptuous as vol
-from homeassistant import config_entries
-
-from .const import SELENIUM_SERVER_URLS, BROWSER_BINARIES
+from voluptuous import Schema, Required, Optional
+from typing import List, Dict, Any
 
 _LOGGER = logging.getLogger(__name__)
 
-"""JSON validation function"""
+# -----------------------------------------------------
+# 🔄 Fetch Data
+# -----------------------------------------------------
 
-def is_valid_json(json_str: str) -> bool:
-    """Validate if a string is valid JSON."""
-    try:
-        json.loads(json_str)
-        return True
-    except json.JSONDecodeError as e:
-        _LOGGER.debug("JSON decode error in options flow: %s", e)
-        return False
-
-"""Selenium and browser-related functions"""
-
-async def check_chromium_installed() -> bool:
-    """Check if Chromium is installed."""
-    loop = asyncio.get_event_loop()
-    result = await loop.run_in_executor(None, _sync_check_chromium)
-    if result:
-        _LOGGER.debug("Chromium is installed.")
-    else:
-        _LOGGER.debug("Chromium is not installed.")
-    return result
-
-async def check_selenium_server(url: str) -> tuple:
-    """Check if a single Selenium server is accessible."""
-    async with aiohttp.ClientSession() as session:
-        try:
-            async with session.get(url, timeout=5) as response:
-                response.raise_for_status()
-                accessible = response.status == 200
-                _LOGGER.debug("Selenium server %s is accessible.", url)
-                return url, accessible
-        except aiohttp.ClientError as e:
-            _LOGGER.warning("Failed to connect to Selenium server at %s: %s", url, e)
-            return url, False
-        except Exception as e:
-            _LOGGER.exception("Unexpected error checking Selenium server at %s: %s", url, e)
-            return url, False
-
-def _sync_check_chromium() -> bool:
-    """Synchronous check for Chromium installation."""
-    for exec_name in BROWSER_BINARIES:
-        try:
-            if shutil.which(exec_name):
-                _LOGGER.debug(f"Found Chromium executable: {exec_name}")
-                return True
-        except Exception as e:
-            _LOGGER.error(
-                f"Exception while checking for executable '{exec_name}': {e}"
-            )
-            continue  # Continue checking other binaries
-    _LOGGER.debug("No Chromium executable found.")
-    return False
-
-"""Schema building functions"""
-
-def build_user_schema(council_options: List[str], default_council: Optional[str] = None, default_name: str = "") -> vol.Schema:
-    """Build schema for the user step.
-    
-    Args:
-        council_options: List of council names to display in the dropdown
-        default_council: Optional default selection for council dropdown
-        default_name: Optional default value for name field
-        
-    Returns:
-        Schema object for the user configuration form
-    """
-    return vol.Schema(
-        {
-            vol.Required("name", default=default_name): cv.string,
-            vol.Required("council", default=default_council): vol.In(council_options),
-        }
-    )
-
-def build_council_schema(council_key: str, councils_data: Dict, default_values: Optional[Dict] = None) -> Dict:
-    """Build schema fields for council-specific information with defaults.
-    
-    Args:
-        council_key: The council key to look up in councils_data
-        councils_data: Dictionary containing council configuration data
-        default_values: Optional dictionary of default values to pre-populate fields
-        
-    Returns:
-        Dictionary of schema fields
-    """
-    if default_values is None:
-        default_values = {}
-        
-    council_info = councils_data.get(council_key, {})
-    fields = {}
-    
-    # Add required fields based on council requirements
-    if council_info.get("wiki_command_url_override"):
-        url_default = default_values.get("url", "")  # Get default URL from default_values
-        fields[vol.Required("url", default=url_default)] = cv.string
-        
-    if "uprn" in council_info:
-        # uprn_default = default_values.get("uprn", "")
-        fields[vol.Required("uprn")] = cv.string
-        
-    if "postcode" in council_info:
-        postcode_default = default_values.get("postcode", "")
-        fields[vol.Required("postcode", default=postcode_default)] = cv.string
-        
-    if "house_number" in council_info:
-        # number_default = default_values.get("number", "")
-        fields[vol.Required("number")] = cv.string
-        
-    if "usrn" in council_info:
-        # usrn_default = default_values.get("usrn", "")
-        fields[vol.Required("usrn")] = cv.string
-    
-    # Return fields dictionary, not a Schema
-    return fields
-
-def build_selenium_schema(selenium_url=None, default_options=None) -> vol.Schema:
-    """Build schema for selenium step.
-    
-    Args:
-        selenium_url: Default URL for the selenium webdriver
-        default_options: List of default selected options for selenium configuration
-                        (e.g., ["Headless Mode"])
-        
-    Returns:
-        Schema object for the selenium configuration form
-    """
-    if default_options is None:
-        default_options = ["Headless Mode"]
-        
-    # Ensure selenium_url is a string, even if None
-    if selenium_url is None:
-        selenium_url = ""
-    
-    # Debug log the URL we're using
-    import logging
-    _LOGGER = logging.getLogger(__name__)
-    _LOGGER.debug("Building selenium schema with URL: '%s'", selenium_url)
-    
-    # Create the schema with proper defaults
-    return vol.Schema({
-        vol.Optional("web_driver", default=selenium_url): vol.Coerce(str),
-        vol.Optional("selenium_options", default=default_options): cv.multi_select({
-            "Headless Mode": "Run in Headless Mode (Recommended)",
-            "Use Local Browser": "Use Local Chromium Browser instead of Selenium"
-        }),
-    })
-
-def build_advanced_schema() -> vol.Schema:
-    """Build schema for advanced step.
-    
-    Args:
-        None
-        
-    Returns:
-        Schema object for the advanced configuration form with default values
-    """
-    return vol.Schema({
-        vol.Optional("manual_refresh_only", default=True): bool,
-        vol.Optional("update_interval", default=12): vol.All(
-            cv.positive_int, vol.Range(min=1)
-        ),
-        vol.Optional("timeout", default=60): vol.All(
-            vol.Coerce(int), vol.Range(min=10)
-        ),
-        vol.Optional("icon_color_mapping", default=""): cv.string,
-    })
-
-def build_reconfigure_schema(
-    existing_data: Dict[str, Any], council_wiki_name: str, council_options: List[str]
-) -> vol.Schema:
-    """Build the schema for reconfiguration with existing data."""
-    fields = {
-        vol.Required("name", default=existing_data.get("name", "")): str,
-        vol.Required("council", default=council_wiki_name): vol.In(council_options),
-        vol.Optional(
-            "manual_refresh_only",
-            default=existing_data.get("manual_refresh_only", False),
-        ): bool,
-        vol.Required(
-            "update_interval", default=existing_data.get("update_interval", 12)
-        ): vol.All(cv.positive_int, vol.Range(min=1)),
-    }
-
-    optional_fields = [
-        ("url", cv.string),
-        ("uprn", cv.string),
-        ("postcode", cv.string),
-        ("number", cv.string),
-        ("web_driver", cv.string),
-        ("headless", bool),
-        ("local_browser", bool),
-        ("timeout", vol.All(vol.Coerce(int), vol.Range(min=10))),
-    ]
-
-    for field_name, validator in optional_fields:
-        if field_name in existing_data:
-            fields[vol.Optional(field_name, default=existing_data[field_name])] = validator
-
-    fields[
-        vol.Optional(
-            "icon_color_mapping",
-            default=existing_data.get("icon_color_mapping", ""),
-        )
-    ] = str
-
-    return vol.Schema(fields)
-
-def build_options_schema(
-    existing_data: Dict[str, Any], 
-    council_options: List[str],
-    council_names: List[str]
-) -> vol.Schema:
-    """Build the schema for the options flow with existing data."""
-    council_current_key = existing_data.get("council", "")
-    try:
-        council_current_wiki = council_options[
-            council_names.index(council_current_key)
-        ]
-    except (ValueError, IndexError):
-        council_current_wiki = ""
-
-    fields = {
-        vol.Required("name", default=existing_data.get("name", "")): str,
-        vol.Required("council", default=council_current_wiki): vol.In(council_options),
-        vol.Optional(
-            "manual_refresh_only",
-            default=existing_data.get("manual_refresh_only", False),
-        ): bool,
-        vol.Required(
-            "update_interval", default=existing_data.get("update_interval", 12)
-        ): vol.All(cv.positive_int, vol.Range(min=1)),
-    }
-
-    optional_fields = [
-        ("icon_color_mapping", cv.string),
-        # Add other optional fields if necessary
-    ]
-
-    for field_name, validator in optional_fields:
-        if field_name in existing_data:
-            fields[vol.Optional(field_name, default=existing_data[field_name])] = validator
-
-    return vol.Schema(fields)
-
-"""Data retrieval and processing functions"""
-
-async def get_councils_json(url: str = None) -> Dict[str, Any]:
-    """
-    Fetch and return the supported councils data, including aliases and sorted alphabetically.
-    
-    Args:
-        url: URL to fetch councils data from.
-    
-    Returns:
-        Dictionary of council data.
-    """
+async def get_councils_json(url: str) -> Dict[str, Any]:
+    """Fetch and normalize council data from a JSON URL."""
     
     try:
         async with aiohttp.ClientSession() as session:
@@ -296,36 +41,102 @@ async def get_councils_json(url: str = None) -> Dict[str, Any]:
                     "Loaded and sorted %d councils (with aliases)", len(sorted_data)
                 )
                 return sorted_data
+            
     except Exception as e:
         _LOGGER.error("Failed to fetch councils data from %s: %s", url, e)
         return {}
 
-"""Council mapping function"""
+async def check_selenium_server(url: str) -> bool:
+    """Check if a Selenium server is accessible."""
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(url, timeout=5) as response:
+                accessible = response.status == 200
+                _LOGGER.debug(f"Selenium server at {url} is {'accessible' if accessible else 'not accessible'}")
+                return accessible
+        except Exception as e:
+            _LOGGER.error(f"Error checking Selenium server at {url}: {e}")
+            return False
 
-def map_wiki_name_to_council_key(wiki_name: str, council_options: List[str], council_names: List[str]) -> str:
-    """Map the council wiki name back to the council key."""
+async def check_chromium_installed() -> bool:
+    """Check if Chromium is installed."""
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, _sync_check_chromium)
+    if result:
+        _LOGGER.debug("Chromium is installed.")
+    else:
+        _LOGGER.debug("Chromium is not installed.")
+    return result
+
+# -----------------------------------------------------
+# 🔄 Schema Builders
+# -----------------------------------------------------
+
+def build_user_schema(wiki_names, default_name="", default_council=None):
+    """Build schema for the user step of the config flow."""
+    
+    # For debugging
+    print(f"Building schema with default_name={default_name}, default_council={default_council}")
+    
+    return vol.Schema({
+        vol.Required("name", default=default_name): str,
+        vol.Required("selected_council", default=default_council): vol.In(wiki_names)
+    })
+
+
+def build_council_schema(council_key: str, council_data: Dict[str, Any], defaults: Dict[str, str] = {}) -> Schema:
+    """Schema for configuring council-specific information."""
+    fields = {}
+    if "postcode" in council_data:
+        fields[vol.Required("postcode", default=defaults.get("postcode", ""))] = str
+    if "uprn" in council_data:
+        fields[vol.Required("uprn")] = str
+    if "house_number" in council_data:
+        fields[vol.Required("house_number")] = str
+    if "usrn" in council_data:
+        fields[vol.Required("usrn")] = str
+    if "wiki_command_url_override" in council_data:
+        fields[vol.Optional("url", default=defaults.get("url", ""))] = str
+
+    _LOGGER.debug(f"Building council schema for {council_key} with fields: {list(fields.keys())}")
+    return Schema(fields)
+
+
+def build_selenium_schema(default_url=""):
+    """Build schema for Selenium configuration."""
+    import homeassistant.helpers.config_validation as cv
+    
+    # Create the schema with proper defaults
+    return vol.Schema({
+        vol.Optional("web_driver", default=default_url): vol.Coerce(str),
+        vol.Optional("selenium_options", default=["Headless Mode"]): cv.multi_select({
+            "Headless Mode": "Run in Headless Mode (Recommended)",
+            "Use Local Browser": "Use Local Chromium Browser instead of Selenium"
+        }),
+    })
+
+
+def build_advanced_schema() -> Schema:
+    """Schema for advanced settings configuration."""
+    _LOGGER.debug("Building advanced schema")
+    return Schema({
+        vol.Optional("manual_refresh_only", default=True): bool,
+        vol.Optional("update_interval", default=12): int,
+        vol.Optional("timeout", default=60): int,
+        vol.Optional("icon_color_mapping", default=""): str
+    })
+
+
+# -----------------------------------------------------
+# 🔄 Utility Functions
+# -----------------------------------------------------
+
+def is_valid_json(json_string: str) -> bool:
+    """Check if a string is valid JSON."""
     try:
-        index = council_options.index(wiki_name)
-        council_key = council_names[index]
-        _LOGGER.debug(
-            "Mapped wiki name '%s' to council key '%s'.", wiki_name, council_key
-        )
-        return council_key
-    except ValueError:
-        _LOGGER.error("Wiki name '%s' not found in council options.", wiki_name)
-        return ""
-
-"""Entry validation function"""
-
-async def async_entry_exists(
-    flow, user_input: Dict[str, Any]
-) -> Optional[config_entries.ConfigEntry]:
-    """Check if a config entry with the same name or data already exists."""
-    for entry in flow._async_current_entries():
-        if entry.data.get("name") == user_input.get("name"):
-            return entry
-        if entry.data.get("council") == user_input.get(
-            "council"
-        ) and entry.data.get("url") == user_input.get("url"):
-            return entry
-    return None
+        json.loads(json_string)
+        _LOGGER.debug("JSON string is valid.")
+        return True
+    except ValueError as e:
+        _LOGGER.error(f"Invalid JSON string: {e}")
+        return False

@@ -18,7 +18,12 @@ DEVICE_CLASS = "bin_collection_schedule"
 
 PLATFORMS = ["sensor", "calendar"]
 
-SELENIUM_SERVER_URLS = ["http://localhost:4444", "http://selenium:4444"]
+SELENIUM_SERVER_URLS = [
+    "http://localhost:4444/wd/hub",
+    "http://selenium-server:4444/wd/hub"
+]
+
+COUNCIL_DATA_URL = "https://raw.githubusercontent.com/robbrad/UKBinCollectionData/0.152.0/uk_bin_collection/tests/input.json"
 
 BROWSER_BINARIES = ["chromium", "chromium-browser", "google-chrome"]
 
