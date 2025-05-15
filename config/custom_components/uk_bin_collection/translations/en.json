@@ -49,7 +49,8 @@
             "selenium_unavailable": "Selenium URL is not available",
             "chromium_unavailable": "Chromium not installed",
             "duplicate_entry": "An entry with the same name or data already exists",
-            "invalid_json": "Invalid JSON format"
+            "invalid_json": "Invalid JSON format",
+            "url_not_modified": "URL must be modified"
         },
         "abort": {
             "council_data_unavailable": "Council data is unavailable. Please try again later."

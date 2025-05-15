@@ -192,8 +192,23 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
         # Initialize the UK Bin Collection Data application
         ukbcd = UKBinCollectionApp()
-        ukbcd.set_args(args)
-        _LOGGER.debug(f"{LOG_PREFIX} UKBinCollectionApp initialized and arguments set.")
+        try:
+            ukbcd.set_args(args)
+            _LOGGER.debug(f"{LOG_PREFIX} UKBinCollectionApp initialized and arguments set.")
+        except SystemExit as e:
+            # Catch the SystemExit exception that argparse raises
+            _LOGGER.error(f"{LOG_PREFIX} Error setting arguments with code {e.code}. Args: {args}")
+            # Try with minimal arguments
+            simple_args = [args[0]] if args else ["generic"]
+            try:
+                ukbcd.set_args(simple_args)
+                _LOGGER.warning(f"{LOG_PREFIX} Falling back to minimal arguments: {simple_args}")
+            except Exception as exc:
+                _LOGGER.exception(f"{LOG_PREFIX} Critical error setting minimal args: {exc}")
+                raise ConfigEntryNotReady("Cannot initialize with minimal arguments") from exc
+        except Exception as exc:
+            _LOGGER.exception(f"{LOG_PREFIX} Unexpected error setting args: {exc}")
+            raise ConfigEntryNotReady("Failed to set arguments") from exc
 
         # Initialize the data coordinator
         coordinator = HouseholdBinCoordinator(
@@ -223,6 +238,12 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         # Forward the setup to all platforms (sensor and calendar)
         _LOGGER.debug(f"{LOG_PREFIX} Forwarding setup to platforms: {PLATFORMS}")
         await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
+        
+        # Add update listener to handle options changes
+        config_entry.async_on_unload(
+            config_entry.add_update_listener(async_reload_entry)
+        )
+        _LOGGER.debug(f"{LOG_PREFIX} Added update listener for options changes")
 
         _LOGGER.info(
             f"{LOG_PREFIX} async_setup_entry finished for entry_id={config_entry.entry_id}"
@@ -238,6 +259,11 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
             "%s Unexpected error in async_setup_entry: %s", LOG_PREFIX, exc
         )
         raise ConfigEntryNotReady from exc
+    
+async def async_reload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> None:
+    """Handle an options update by reloading the config entry."""
+    _LOGGER.debug(f"{LOG_PREFIX} Reloading config entry {config_entry.entry_id} after options update")
+    await hass.config_entries.async_reload(config_entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
@@ -278,23 +304,58 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
 
     return unload_ok
 
+async def async_get_options_flow(config_entry):
+    """Get options flow for this handler."""
+    from .options_flow import UkBinCollectionOptionsFlowHandler
+    return UkBinCollectionOptionsFlowHandler(config_entry)
+
 
 def build_ukbcd_args(config_data: dict) -> list:
     """Build the argument list for UKBinCollectionApp from config data."""
+    # Extract council identifier - this is a required positional argument
     council = config_data.get("original_parser") or config_data.get("council", "")
-    url = config_data.get("url", "")
-
-    args = [council, url]
-
-    for key, value in config_data.items():
-        if key in EXCLUDED_ARG_KEYS:
-            continue
-        if key == "web_driver" and value is not None:
-            value = value.rstrip("/")
-        args.append(f"--{key}={value}")
-
-    return args
-
+    
+    # If we don't have a council, use a generic value to avoid argparse errors
+    if not council:
+        _LOGGER.warning(f"{LOG_PREFIX} No council identifier found, using 'generic'")
+        council = "generic"
+        
+    # Start with the positional arguments - council is the first one
+    args = [council]
+    
+    # Add URL if it exists (second positional argument)
+    url = config_data.get("url", "").strip()
+    if url:
+        args.append(url)
+    
+    # List of arguments that should NOT be passed to the command line
+    # Fix the operand type error by converting EXCLUDED_ARG_KEYS to a list first
+    excluded_keys = set(list(EXCLUDED_ARG_KEYS) + ["council", "original_parser", "url", "council_list"])
+    
+    try:
+        # Add other parameters as named arguments
+        for key, value in config_data.items():
+            # Skip excluded keys and any key containing 'council_list' which is too large
+            if key in excluded_keys or "council_list" in key:
+                continue
+                
+            # Skip empty values
+            if value is None or value == "":
+                continue
+                
+            # Clean up web_driver URL if needed
+            if key == "web_driver" and value is not None:
+                value = value.rstrip("/")
+                
+            # Format as --key=value for argparse
+            args.append(f"--{key}={value}")
+        
+        _LOGGER.debug(f"{LOG_PREFIX} Final args for UKBinCollectionApp: {args}")
+        return args
+    except Exception as e:
+        _LOGGER.error(f"{LOG_PREFIX} Error building arguments: {e}")
+        # Return just the council name as a fallback
+        return [council]
 
 class HouseholdBinCoordinator(DataUpdateCoordinator):
     """Coordinator to manage fetching and updating UK Bin Collection data."""

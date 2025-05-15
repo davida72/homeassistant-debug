@@ -4,6 +4,7 @@ import logging
 import asyncio
 import voluptuous as vol
 import shutil
+import re
 
 from voluptuous import Schema, Required, Optional
 from typing import List, Dict, Any
@@ -18,38 +19,41 @@ _LOGGER = logging.getLogger(__name__)
 # 🔄 Fetch Data
 # -----------------------------------------------------
 
-async def get_councils_json(url: str) -> Dict[str, Any]:
-    """Fetch and normalize council data from a JSON URL."""
+async def get_councils_json(url: str = None) -> Dict[str, Any]:
+    """
+    Fetch council data from a JSON URL.
+    
+    Assumes the new council-centric format where each council is a first-class entity
+    and some councils reference scrapers they use via the "scraper" field.
+    """
+    from .const import COUNCIL_DATA_URL
+    
+    if url is None:
+        url = COUNCIL_DATA_URL
     
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
+            async with session.get(url, timeout=30) as response:
                 response.raise_for_status()
                 data_text = await response.text()
-                original_data = json.loads(data_text)
-                _LOGGER.debug("Raw council data: %s", original_data)
-
-                normalized_data = {}
-                for key, value in original_data.items():
-                    normalized_data[key] = value
-                    for alias in value.get("supported_councils", []):
-                        alias_data = value.copy()
-                        alias_data["original_parser"] = key
-                        alias_data["wiki_name"] = (
-                            f"{alias.replace('Council', ' Council')} (via Google Calendar)"
-                        )
-                        normalized_data[alias] = alias_data
-
-                # Sort alphabetically by key (council ID)
-                sorted_data = dict(sorted(normalized_data.items()))
-
-                _LOGGER.debug(
-                    "Loaded and sorted %d councils (with aliases)", len(sorted_data)
-                )
+                council_data = json.loads(data_text)
+                
+                sorted_data = dict(sorted(council_data.items()))
+                
+                _LOGGER.debug("Loaded %d councils", len(sorted_data))
                 return sorted_data
             
+    except aiohttp.ClientError as e:
+        _LOGGER.error("HTTP error fetching council data: %s", e)
+        return {}
+    except asyncio.TimeoutError:
+        _LOGGER.error("Timeout fetching council data from %s", url)
+        return {}
+    except json.JSONDecodeError as e:
+        _LOGGER.error("Invalid JSON in council data: %s", e)
+        return {}
     except Exception as e:
-        _LOGGER.debug("Failed to fetch councils data from %s: %s", url, e)
+        _LOGGER.error("Unexpected error fetching council data: %s", e)
         return {}
 
 async def check_selenium_server(url: str) -> bool:
@@ -97,7 +101,7 @@ def build_user_schema(wiki_names, default_name="", default_council=None):
     """Build schema for the user step of the config flow."""
     
     # For debugging
-    print(f"Building schema with default_name={default_name}, default_council={default_council}")
+    _LOGGER.debug(f"Building schema with default_name={default_name}, default_council={default_council}")
     
     return vol.Schema({
         vol.Required("name", default=default_name): str,
@@ -111,11 +115,11 @@ def build_council_schema(council_key: str, council_data: Dict[str, Any], default
     if "postcode" in council_data:
         fields[vol.Required("postcode", default=defaults.get("postcode", ""))] = str
     if "uprn" in council_data:
-        fields[vol.Required("uprn")] = str
+        fields[vol.Required("uprn", default=defaults.get("uprn", ""))] = str
     if "house_number" in council_data:
-        fields[vol.Required("house_number")] = str
+        fields[vol.Required("house_number", default=defaults.get("house_number", ""))] = str
     if "usrn" in council_data:
-        fields[vol.Required("usrn")] = str
+        fields[vol.Required("usrn", default=defaults.get("usrn", ""))] = str
     if "wiki_command_url_override" in council_data:
         fields[vol.Optional("url", default=defaults.get("url", ""))] = str
 
@@ -134,15 +138,37 @@ def build_selenium_schema(default_url=""):
         vol.Optional("local_browser", default=False): bool,
     })
 
-def build_advanced_schema() -> Schema:
+def build_advanced_schema(defaults=None) -> Schema:
     """Schema for advanced settings configuration."""
-    _LOGGER.debug("Building advanced schema")
+    if defaults is None:
+        defaults = {}
+        
+    _LOGGER.debug("Building advanced schema with defaults: %s", defaults)
     return Schema({
-        vol.Optional("manual_refresh_only", default=True): bool,
-        vol.Optional("update_interval", default=12): int,
-        vol.Optional("timeout", default=60): int,
-        vol.Optional("icon_color_mapping", default=""): str
+        vol.Optional("manual_refresh_only", default=defaults.get("manual_refresh_only", True)): bool,
+        vol.Optional("update_interval", default=defaults.get("update_interval", 12)): int,
+        vol.Optional("timeout", default=defaults.get("timeout", 60)): int,
+        vol.Optional("icon_color_mapping", default=defaults.get("icon_color_mapping", "")): str
     })
+
+
+def build_options_schema(existing_data, council_options, council_names):
+    """Build schema for the options flow."""
+    # Find the current council's wiki_name
+    council_key = existing_data.get("council", "")
+    council_index = council_names.index(council_key) if council_key in council_names else 0
+    selected_wiki_name = council_options[council_index] if council_index < len(council_options) else ""
+    
+    # Create schema
+    return vol.Schema(
+        {
+            vol.Required("council", default=selected_wiki_name): vol.In(council_options),
+            vol.Required("timeout", default=existing_data.get("timeout", 60)): int,
+            vol.Optional("update_interval", default=existing_data.get("update_interval", 12)): int,
+            vol.Optional("manual_refresh_only", default=existing_data.get("manual_refresh_only", False)): bool,
+            vol.Optional("icon_color_mapping", default=existing_data.get("icon_color_mapping", "")): str,
+        }
+    )
 
 
 # -----------------------------------------------------
@@ -169,3 +195,28 @@ async def async_entry_exists(
         if entry.data.get("council") == user_input.get("council") and entry.data.get("url") == user_input.get("url"):
             return entry
     return None
+
+def map_wiki_name_to_council_key(wiki_name, council_options, council_names):
+    """Maps a wiki_name back to the council key."""
+    try:
+        index = council_options.index(wiki_name)
+        return council_names[index]
+    except (ValueError, IndexError):
+        _LOGGER.warning(f"Could not map wiki_name '{wiki_name}' to council key")
+        return wiki_name  # Return the wiki_name as fallback
+    
+def is_valid_postcode(postcode: str) -> bool:
+    # UK postcode regex pattern
+    postcode_regex = r"^(GIR 0AA|[A-PR-UWYZ][A-HK-Y]?[0-9][0-9A-HJKSTUW]? ?[0-9][ABD-HJLNP-UW-Z]{2})$"
+    return re.match(postcode_regex, postcode.replace(" ", "").upper()) is not None
+
+    # Examples
+    #print(is_valid_postcode("SW1A 1AA"))  # True
+    #print(is_valid_postcode("INVALID"))   # False
+
+def is_valid_uprn(uprn: str) -> bool:
+    return uprn.isdigit() and len(uprn) <= 12
+    
+    # Examples
+    # print(is_valid_uprn("100021066689"))  # True
+    # print(is_valid_uprn("ABCD12345678"))  # False

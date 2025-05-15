@@ -10,6 +10,7 @@ from .utils import (
     async_entry_exists,
     check_chromium_installed,
     check_selenium_server,
+    is_valid_json
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -23,13 +24,14 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
         """Initialize the config flow."""
         self.data = {}
         self._initialized = False
+        self.options_flow = False  # Flag to indicate if this is being used in options flow
 
     async def async_step_user(self, user_input=None):
         """Step 1: Select Council."""
         
         errors = {}
         
-        # Only run initialization once
+        # Only run initialization once if not already initialized
         if not self._initialized:
             await initialisation_data(self)
             self._initialized = True
@@ -54,11 +56,25 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
         # Get default name (street name from property info)
         default_name = self.data.get("property_info", {}).get("street_name", "")
         
-        schema = build_user_schema(
-            wiki_names=wiki_names,
-            default_name=default_name,
-            default_council=detected_council_name
-        )
+        # If this is being used for options flow, use the existing values
+        if self.options_flow:
+            council_key = self.data.get("selected_council", "")
+            if council_key in council_list:
+                default_council = council_list[council_key].get("wiki_name", council_key)
+            else:
+                default_council = detected_council_name or ""
+                
+            schema = build_user_schema(
+                wiki_names=wiki_names,
+                default_name=self.data.get("name", default_name),
+                default_council=default_council
+            )
+        else:
+            schema = build_user_schema(
+                wiki_names=wiki_names,
+                default_name=default_name,
+                default_council=detected_council_name
+            )
         
         if user_input is not None:
             selected_wiki_name = user_input.get("selected_council")
@@ -69,25 +85,26 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
             self.data["selected_wiki_name"] = selected_wiki_name
             self.data["selected_council"] = council_key
             
-
-            # Check for duplicate entries
-            existing_entry = await async_entry_exists(self, user_input)
-            if existing_entry:
-                errors["base"] = "duplicate_entry"
-                _LOGGER.warning(
-                    "Duplicate entry found: %s", existing_entry.data.get("name")
-                )
-            else:
+            # Only check for duplicates if this is a new entry (not options flow)
+            if not self.options_flow:
+                existing_entry = await async_entry_exists(self, user_input)
+                if existing_entry:
+                    errors["base"] = "duplicate_entry"
+                    _LOGGER.warning(
+                        "Duplicate entry found: %s", existing_entry.data.get("name")
+                    )
+            
+            if not errors:
                 return await self.async_step_council_info()
 
         # Dynamically set the description placeholders
         description_placeholders = {}
-        if detected_council_name:
+        if detected_council_name and not self.options_flow:
             description_placeholders["step_user_description"] = "Council auto-selected based on location."
             _LOGGER.debug("Detected council: %s", detected_council_name)
         else:
             description_placeholders["step_user_description"] = f"Please [contact us](https://github.com/robbrad/UKBinCollectionData#requesting-your-council) if your council isn't listed."
-            _LOGGER.debug("No council detected.")
+            _LOGGER.debug("No council detected or in options flow mode.")
 
         return self.async_show_form(
             step_id="user",
@@ -100,27 +117,33 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
         """Step 2: Configure Council Information."""
         errors = {}
 
-        if user_input is not None:
-            self.data.update(user_input)
-            council_key = self.data.get("selected_council", "")
-            council_data = self.data.get("council_list", {}).get(council_key, {})
-
-            # If this council does not require Selenium, skip to advanced
-            if not council_data.get("web_driver"):
-                return await self.async_step_advanced()
-            return await self.async_step_selenium()
-
         council_key = self.data.get("selected_council", "")
         council_data = self.data.get("council_list", {}).get(council_key, {})
         wiki_command_url = council_data.get("wiki_command_url_override", "")
 
+        if user_input is not None:
+            # Check if URL is required and hasn't been modified
+            if user_input.get("url") == wiki_command_url:
+                errors["base"] = "url_not_modified"
+                _LOGGER.warning("URL was not modified but is required for this council")
+            
+            if not errors:
+                self.data.update(user_input)
+                council_key = self.data.get("selected_council", "")
+                council_data = self.data.get("council_list", {}).get(council_key, {})
+
+                # If this council does not require Selenium, skip to advanced
+                if not council_data.get("web_driver"):
+                    return await self.async_step_advanced()
+                return await self.async_step_selenium()
+
         default_values = {
-            "postcode": self.data.get("detected_postcode", ""),
-            "url": wiki_command_url
+            "postcode": self.data.get("detected_postcode", self.data.get("postcode", "")),
+            "url": self.data.get("url", wiki_command_url)
         }
 
         wiki_note = council_data.get("wiki_note", "No additional notes available for this council.")
-
+        
         description_placeholders = {}
         description_placeholders["step_council_info_description"] = wiki_note
 
@@ -148,7 +171,9 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
             self.data["selenium_status"] = {}
 
         # Get default selenium URL (first working one)
-        selenium_url = next((url for url, status in self.data["selenium_status"].items() if status), "")
+        selenium_url = next((url for url, status in self.data["selenium_status"].items() if status), 
+                           self.data.get("web_driver", ""))
+                           
         schema = build_selenium_schema(selenium_url)
 
         if user_input is not None:
@@ -202,11 +227,60 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
     async def async_step_advanced(self, user_input=None):
         """Step 4: Advanced configuration."""
         errors = {}
-        schema = build_advanced_schema()
+        schema = build_advanced_schema(self.data)
 
         if user_input is not None:
+            # Validate JSON mapping if provided
+            if user_input.get("icon_color_mapping"):
+                if not is_valid_json(user_input["icon_color_mapping"]):
+                    errors["base"] = "invalid_json"
+                    return self.async_show_form(
+                        step_id="advanced",
+                        data_schema=schema,
+                        errors=errors
+                    )
+                    
             self.data.update(user_input)
-            return self.async_create_entry(title=self.data["selected_council"], data=self.data)
+            
+            # Get selected council data
+            council_key = self.data.get("selected_council", "")
+            council_data = self.data.get("council_list", {}).get(council_key, {})
+            
+            # Filter to essential configuration data
+            config_data = {
+                # Core identification
+                "name": self.data.get("name"),
+                "selected_council": council_key,
+                
+                # Add scraper reference if this council uses a scraper
+                "scraper": council_data.get("scraper"),
+                
+                # Council specific parameters
+                "postcode": self.data.get("postcode"),
+                "uprn": self.data.get("uprn"),
+                "house_number": self.data.get("house_number"),
+                "usrn": self.data.get("usrn"),
+                "url": self.data.get("url"),
+                "skip_get_url": self.data.get("skip_get_url"),
+                
+                # Selenium configuration
+                "web_driver": self.data.get("web_driver"),
+                "headless_mode": self.data.get("headless_mode", True),
+                "local_browser": self.data.get("local_browser", False),
+                
+                # Advanced settings
+                "manual_refresh_only": self.data.get("manual_refresh_only", True),
+                "update_interval": self.data.get("update_interval", 12),
+                "timeout": self.data.get("timeout", 60),
+                "icon_color_mapping": self.data.get("icon_color_mapping", "{}"),
+            }
+            
+            # Filter out None values to avoid storing unnecessary fields
+            filtered_config = {k: v for k, v in config_data.items() if v is not None}
+            
+            _LOGGER.debug(f"Saving configuration: {filtered_config}")
+            
+            return self.async_create_entry(title=filtered_config["name"], data=filtered_config)
 
         return self.async_show_form(
             step_id="advanced",
