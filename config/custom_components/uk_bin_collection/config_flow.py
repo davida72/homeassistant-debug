@@ -1,5 +1,7 @@
 from homeassistant import config_entries
+from homeassistant.core import callback
 from .initialisation import initialisation_data
+from .options_flow import UkBinCollectionOptionsFlowHandler
 
 import logging
 from .utils import (
@@ -18,7 +20,7 @@ _LOGGER = logging.getLogger(__name__)
 class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collection"):
     """Config flow for Bin Collection Data."""
     
-    VERSION = 4
+    VERSION = 3
     
     def __init__(self):
         """Initialize the config flow."""
@@ -85,6 +87,12 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
             self.data["selected_wiki_name"] = selected_wiki_name
             self.data["selected_council"] = council_key
             
+            # IMPORTANT: Preserve the original_parser if present in council data
+            council_data = council_list.get(council_key, {})
+            if "original_parser" in council_data:
+                self.data["original_parser"] = council_data["original_parser"]
+                _LOGGER.debug(f"Using original_parser '{council_data['original_parser']}' for council {council_key}")
+            
             # Only check for duplicates if this is a new entry (not options flow)
             if not self.options_flow:
                 existing_entry = await async_entry_exists(self, user_input)
@@ -123,7 +131,7 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
 
         if user_input is not None:
             # Check if URL is required and hasn't been modified
-            if user_input.get("url") == wiki_command_url:
+            if user_input.get("url") == wiki_command_url and wiki_command_url:
                 errors["base"] = "url_not_modified"
                 _LOGGER.warning("URL was not modified but is required for this council")
             
@@ -230,60 +238,94 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
         schema = build_advanced_schema(self.data)
 
         if user_input is not None:
-            # Validate JSON mapping if provided
+            # Check if icon_color_mapping is valid JSON if provided
             if user_input.get("icon_color_mapping"):
                 if not is_valid_json(user_input["icon_color_mapping"]):
-                    errors["base"] = "invalid_json"
-                    return self.async_show_form(
-                        step_id="advanced",
-                        data_schema=schema,
-                        errors=errors
-                    )
+                    errors["icon_color_mapping"] = "invalid_json"
+                    _LOGGER.warning("Invalid JSON in icon_color_mapping field")
+            
+            if not errors:
+                self.data.update(user_input)
+                
+                # Get council data for fallback values
+                council_key = self.data.get("selected_council", "")
+                council_data = self.data.get("council_list", {}).get(council_key, {})
+                
+                # If the user hasn't provided a URL, use the default from the council data
+                if not self.data.get("url"):
+                    _LOGGER.debug(f"URL is missing, attempting to use council's default URL")
+                    default_url = council_data.get("url", "")
+                    self.data["url"] = default_url
+                    _LOGGER.debug(f"Using council's default URL: {default_url}")
+                
+                # If skip_get_url is missing, get it from council data
+                if "skip_get_url" not in self.data:
+                    skip_get_url = council_data.get("skip_get_url", False)
+                    self.data["skip_get_url"] = skip_get_url
+                    _LOGGER.debug(f"Using council's skip_get_url value: {skip_get_url}")
+                
+                # Define field mappings for parameter name corrections
+                field_mappings = {
+                    "headless_mode": "headless",  # headless_mode should be headless
+                    "house_number": "number",     # house_number should be number
+                }
+                
+                # List of essential fields with correct parameter names
+                essential_fields = [
+                    "name", 
+                    "postcode", 
+                    "uprn", 
+                    "number",  
+                    "usrn", 
+                    "url", 
+                    "original_parser",
+                    "skip_get_url",
+                    "web_driver", 
+                    "headless",
+                    "local_browser",
+                    "manual_refresh_only", 
+                    "update_interval", 
+                    "timeout", 
+                    "icon_color_mapping"
+                ]
+                
+                # Create filtered data dictionary with correct parameter names
+                filtered_data = {}
+                for field in essential_fields:
+                    # Check if this field has a mapping (old name → new name)
+                    old_field = next((old for old, new in field_mappings.items() if new == field), field)
                     
-            self.data.update(user_input)
-            
-            # Get selected council data
-            council_key = self.data.get("selected_council", "")
-            council_data = self.data.get("council_list", {}).get(council_key, {})
-            
-            # Filter to essential configuration data
-            config_data = {
-                # Core identification
-                "name": self.data.get("name"),
-                "selected_council": council_key,
+                    # Get value using the old field name from self.data
+                    value = self.data.get(old_field)
+                    
+                    # If value exists, add it to filtered_data with the correct field name
+                    if value is not None:
+                        filtered_data[field] = value
                 
-                # Add scraper reference if this council uses a scraper
-                "scraper": council_data.get("scraper"),
+                # Save selected_council as council in the final config
+                filtered_data["council"] = council_key
                 
-                # Council specific parameters
-                "postcode": self.data.get("postcode"),
-                "uprn": self.data.get("uprn"),
-                "house_number": self.data.get("house_number"),
-                "usrn": self.data.get("usrn"),
-                "url": self.data.get("url"),
-                "skip_get_url": self.data.get("skip_get_url"),
-                
-                # Selenium configuration
-                "web_driver": self.data.get("web_driver"),
-                "headless_mode": self.data.get("headless_mode", True),
-                "local_browser": self.data.get("local_browser", False),
-                
-                # Advanced settings
-                "manual_refresh_only": self.data.get("manual_refresh_only", True),
-                "update_interval": self.data.get("update_interval", 12),
-                "timeout": self.data.get("timeout", 60),
-                "icon_color_mapping": self.data.get("icon_color_mapping", "{}"),
-            }
-            
-            # Filter out None values to avoid storing unnecessary fields
-            filtered_config = {k: v for k, v in config_data.items() if v is not None}
-            
-            _LOGGER.debug(f"Saving configuration: {filtered_config}")
-            
-            return self.async_create_entry(title=filtered_config["name"], data=filtered_config)
+                # Final validation for critical fields
+                if not filtered_data.get("council"):
+                    _LOGGER.error("Council not specified in configuration")
+                    errors["base"] = "missing_council"
+                elif not filtered_data.get("url"):
+                    _LOGGER.error("URL not specified in configuration")
+                    errors["base"] = "missing_url"
+                else:
+                    _LOGGER.debug(f"Final configuration: {filtered_data}")
+                    return self.async_create_entry(title=filtered_data["name"], data=filtered_data)
 
         return self.async_show_form(
             step_id="advanced",
             data_schema=schema,
             errors=errors
         )
+    
+    # This is commented out for now because configure is a headache to get working properly
+    # @staticmethod
+    # @callback
+    # def async_get_options_flow(config_entry):
+    #     """Get the options flow for this handler."""
+    #     return UkBinCollectionOptionsFlowHandler(config_entry)
+

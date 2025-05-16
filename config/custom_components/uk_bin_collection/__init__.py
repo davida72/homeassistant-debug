@@ -2,8 +2,10 @@
 
 import asyncio
 import logging
-from datetime import timedelta
 import json
+
+from datetime import timedelta
+from . import options_flow
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -284,15 +286,26 @@ def build_ukbcd_args(config_data: dict) -> list:
     council = config_data.get("original_parser") or config_data.get("council", "")
     url = config_data.get("url", "")
 
+    # Start with positional arguments
     args = [council, url]
 
+    # Add optional arguments in the format expected by argparse (--key=value)
     for key, value in config_data.items():
         if key in EXCLUDED_ARG_KEYS:
             continue
+        if value is None:
+            continue
+            
+        # Special handling for web_driver URLs
         if key == "web_driver" and value is not None:
             value = value.rstrip("/")
+            
+        # Use the format that was working before (--key=value)
         args.append(f"--{key}={value}")
 
+    # Log the arguments for debugging
+    _LOGGER.debug(f"{LOG_PREFIX} Generated args: {args}")
+    
     return args
 
 

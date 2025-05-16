@@ -20,12 +20,14 @@ PLATFORMS = ["sensor", "calendar"]
 
 SELENIUM_SERVER_URLS = [
     "http://localhost:4444/",
-    "http://selenium:4444/",
-    "http://127.0.0.1:4444/"
+    "http://selenium:4444/"
 ]
 
 # This URL will always be the master version of the JSON file
-COUNCIL_DATA_URL = "https://raw.githubusercontent.com/robbrad/UKBinCollectionData/master/uk_bin_collection/tests/input.json"
+# COUNCIL_DATA_URL = "https://raw.githubusercontent.com/robbrad/UKBinCollectionData/refs/heads/master/uk_bin_collection/tests/input.json"
+# COUNCIL_DATA_URL = "http://65.108.155.134/input-cleaned-old.json"
+COUNCIL_DATA_URL = "http://65.108.155.134/input-new.json"
+
 
 BROWSER_BINARIES = ["chromium", "chromium-browser", "google-chrome"]
 

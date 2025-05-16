@@ -23,8 +23,19 @@ async def get_councils_json(url: str = None) -> Dict[str, Any]:
     """
     Fetch council data from a JSON URL.
     
-    Assumes the new council-centric format where each council is a first-class entity
-    and some councils reference scrapers they use via the "scraper" field.
+    This function can handle both data formats:
+    - Old format (input.json): Where GooglePublicCalendarCouncil contains supported_councils
+    - New format (placeholder_input.json): Where councils directly reference GooglePublicCalendarCouncil 
+      via original_parser
+    
+    This function ensures the output is consistent regardless of input format, maintaining
+    the same user experience by preserving council names in the wiki_name field.
+    
+    Args:
+        url: URL to fetch councils data from. If None, uses the default URL from constants.
+    
+    Returns:
+        Dictionary of council data, sorted alphabetically by council ID.
     """
     from .const import COUNCIL_DATA_URL
     
@@ -38,7 +49,37 @@ async def get_councils_json(url: str = None) -> Dict[str, Any]:
                 data_text = await response.text()
                 council_data = json.loads(data_text)
                 
-                sorted_data = dict(sorted(council_data.items()))
+                # Check if we're dealing with the old format by looking for supported_councils in GooglePublicCalendarCouncil
+                is_old_format = "GooglePublicCalendarCouncil" in council_data and "supported_councils" in council_data["GooglePublicCalendarCouncil"]
+                
+                normalized_data = {}
+                
+                if is_old_format:
+                    _LOGGER.debug("Detected old format JSON (input.json style)")
+                    # Process old format
+                    for key, value in council_data.items():
+                        normalized_data[key] = value
+                        # If this is GooglePublicCalendarCouncil, process its supported councils
+                        if key == "GooglePublicCalendarCouncil" and "supported_councils" in value:
+                            for alias in value.get("supported_councils", []):
+                                alias_data = value.copy()
+                                alias_data["original_parser"] = key
+                                alias_data["wiki_command_url_override"] = "https://calendar.google.com/calendar/ical/XXXXX%40group.calendar.google.com/public/basic.ics"
+                                # Set wiki_name without any suffix for consistency
+                                alias_data["wiki_name"] = alias.replace('Council', ' Council')
+                                # Preserve wiki_note if it exists
+                                if "wiki_note" in value:
+                                    alias_data["wiki_note"] = value["wiki_note"]
+                                normalized_data[alias] = alias_data
+                else:
+                    _LOGGER.debug("Detected new format JSON (placeholder_input.json style)")
+                    # Process new format - all councils are already first-class entries with their own complete data
+                    normalized_data = council_data.copy()
+                    # No special handling needed for GooglePublicCalendarCouncil councils
+                    # as they're already properly defined in the new format
+                
+                # Sort alphabetically by key (council ID)
+                sorted_data = dict(sorted(normalized_data.items()))
                 
                 _LOGGER.debug("Loaded %d councils", len(sorted_data))
                 return sorted_data
@@ -62,10 +103,10 @@ async def check_selenium_server(url: str) -> bool:
         try:
             async with session.get(url, timeout=5) as response:
                 accessible = response.status == 200
-                _LOGGER.debug(f"Selenium server at {url} is {'accessible' if accessible else 'not accessible'}")
+                # _LOGGER.debug(f"Selenium server at {url} is {'accessible' if accessible else 'not accessible'}")
                 return accessible
         except Exception as e:
-            _LOGGER.debug(f"Error checking Selenium server at {url}: {e}")
+            # _LOGGER.debug(f"Error checking Selenium server at {url}: {e}")
             return False
 
 async def check_chromium_installed() -> bool:
