@@ -57,27 +57,19 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
         
         # Get default name (street name from property info)
         default_name = self.data.get("property_info", {}).get("street_name", "")
-        
-        # If this is being used for options flow, use the existing values
-        if self.options_flow:
-            council_key = self.data.get("selected_council", "")
-            if council_key in council_list:
-                default_council = council_list[council_key].get("wiki_name", council_key)
-            else:
-                default_council = detected_council_name or ""
-                
-            schema = build_user_schema(
-                wiki_names=wiki_names,
-                default_name=self.data.get("name", default_name),
-                default_council=default_council
-            )
+
+        council_key = self.data.get("selected_council", "")
+        if council_key in council_list:
+            default_council = council_list[council_key].get("wiki_name", council_key)
         else:
-            schema = build_user_schema(
-                wiki_names=wiki_names,
-                default_name=default_name,
-                default_council=detected_council_name
-            )
-        
+            default_council = detected_council_name or ""
+                
+        schema = build_user_schema(
+            wiki_names=wiki_names,
+            default_name=self.data.get("name", default_name),
+            default_council=default_council
+        )
+
         if user_input is not None:
             selected_wiki_name = user_input.get("selected_council")
             council_key = wiki_names_map.get(selected_wiki_name)
@@ -87,7 +79,7 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
             self.data["selected_wiki_name"] = selected_wiki_name
             self.data["selected_council"] = council_key
             
-            # IMPORTANT: Preserve the original_parser if present in council data
+            # Preserve the original_parser if present in council data
             council_data = council_list.get(council_key, {})
             if "original_parser" in council_data:
                 self.data["original_parser"] = council_data["original_parser"]
@@ -322,10 +314,9 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
             errors=errors
         )
     
-    # This is commented out for now because configure is a headache to get working properly
-    # @staticmethod
-    # @callback
-    # def async_get_options_flow(config_entry):
-    #     """Get the options flow for this handler."""
-    #     return UkBinCollectionOptionsFlowHandler(config_entry)
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return UkBinCollectionOptionsFlowHandler(config_entry)
 
