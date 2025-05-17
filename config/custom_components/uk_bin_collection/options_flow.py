@@ -15,7 +15,8 @@ from .utils import (
     build_advanced_schema,
     check_chromium_installed,
     check_selenium_server,
-    is_valid_json
+    is_valid_json,
+    prepare_config_data
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,6 +29,14 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
         self.config_entry = config_entry
         self.data = dict(config_entry.data)
         self._initialized = False
+        
+        # IMPORTANT: Ensure council is initialized from the start
+        # If council doesn't exist in config data but original_parser does, use that
+        if not self.data.get("council") and self.data.get("original_parser"):
+            self.data["council"] = self.data["original_parser"]
+            
+        # Log the initial state for debugging
+        _LOGGER.debug(f"Options flow initialized with council: {self.data.get('council')}, original_parser: {self.data.get('original_parser')}")
         
     async def async_step_init(self, user_input=None):
         """First step in options flow - redirect to user selection."""
@@ -82,7 +91,7 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
             self.data["selected_wiki_name"] = selected_wiki_name
             self.data["selected_council"] = council_key
             
-            # IMPORTANT: Preserve the original_parser if present in council data
+            # Preserve the original_parser if present in council data
             council_data = council_list.get(council_key, {})
             if "original_parser" in council_data:
                 self.data["original_parser"] = council_data["original_parser"]
@@ -239,53 +248,13 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
                     _LOGGER.warning("Invalid JSON in icon_color_mapping field")
             
             if not errors:
+                # Update the data with the user input
                 self.data.update(user_input)
                 
-                # Get council data for fallback values
-                council_key = self.data.get("selected_council", "")
-                
-                # Ensure the council key is stored properly
-                self.data["council"] = council_key
-                
-                # Define field mappings for parameter name corrections
-                field_mappings = {
-                    "headless_mode": "headless",  # headless_mode should be headless
-                    "house_number": "number",     # house_number should be number
-                }
-                
-                # List of essential fields with correct parameter names
-                essential_fields = [
-                    "name", 
-                    "postcode", 
-                    "uprn", 
-                    "number",  
-                    "usrn", 
-                    "url", 
-                    "original_parser",
-                    "skip_get_url",
-                    "web_driver", 
-                    "headless",
-                    "local_browser",
-                    "manual_refresh_only", 
-                    "update_interval", 
-                    "timeout", 
-                    "icon_color_mapping"
-                ]
-                
-                # Create filtered data dictionary with correct parameter names
-                filtered_data = {}
-                for field in essential_fields:
-                    # Check if this field has a mapping (old name → new name)
-                    old_field = next((old for old, new in field_mappings.items() if new == field), field)
-                    
-                    # Get value using the old field name from self.data
-                    value = self.data.get(old_field)
-                    
-                    # If value exists, add it to filtered_data with the correct field name
-                    if value is not None:
-                        filtered_data[field] = value
-                
                 try:
+                    # Use the shared function to prepare the data
+                    filtered_data = prepare_config_data(self.data)
+                    
                     # Update the config entry with the new data
                     self.hass.config_entries.async_update_entry(
                         self.config_entry,
@@ -295,6 +264,13 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
                     # Trigger a reload for the config entry
                     await self.hass.config_entries.async_reload(self.config_entry.entry_id)
                     _LOGGER.info(f"Successfully updated and reloaded config entry {self.config_entry.entry_id}")
+                    
+                except ValueError as e:
+                    return self.async_show_form(
+                        step_id="advanced",
+                        data_schema=schema,
+                        errors=errors
+                    )
                 except Exception as e:
                     _LOGGER.exception(f"Error updating config entry: {e}")
                     errors["base"] = "update_failed"

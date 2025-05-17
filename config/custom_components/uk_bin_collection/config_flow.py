@@ -12,7 +12,8 @@ from .utils import (
     async_entry_exists,
     check_chromium_installed,
     check_selenium_server,
-    is_valid_json
+    is_valid_json,
+    prepare_config_data
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -239,74 +240,38 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
             if not errors:
                 self.data.update(user_input)
                 
-                # Get council data for fallback values
-                council_key = self.data.get("selected_council", "")
-                council_data = self.data.get("council_list", {}).get(council_key, {})
+                # # Get council data for fallback values
+                # council_key = self.data.get("selected_council", "")
+                # council_data = self.data.get("council_list", {}).get(council_key, {})
                 
-                # If the user hasn't provided a URL, use the default from the council data
-                if not self.data.get("url"):
-                    _LOGGER.debug(f"URL is missing, attempting to use council's default URL")
-                    default_url = council_data.get("url", "")
-                    self.data["url"] = default_url
-                    _LOGGER.debug(f"Using council's default URL: {default_url}")
+                # # If the user hasn't provided a URL, use the default from the council data
+                # if not self.data.get("url"):
+                #     _LOGGER.debug(f"URL is missing, attempting to use council's default URL")
+                #     default_url = council_data.get("url", "")
+                #     self.data["url"] = default_url
+                #     _LOGGER.debug(f"Using council's default URL: {default_url}")
                 
-                # If skip_get_url is missing, get it from council data
-                if "skip_get_url" not in self.data:
-                    skip_get_url = council_data.get("skip_get_url", False)
-                    self.data["skip_get_url"] = skip_get_url
-                    _LOGGER.debug(f"Using council's skip_get_url value: {skip_get_url}")
+                # # If skip_get_url is missing, get it from council data
+                # if "skip_get_url" not in self.data:
+                #     skip_get_url = council_data.get("skip_get_url", False)
+                #     self.data["skip_get_url"] = skip_get_url
+                #     _LOGGER.debug(f"Using council's skip_get_url value: {skip_get_url}")
                 
-                # Define field mappings for parameter name corrections
-                field_mappings = {
-                    "headless_mode": "headless",  # headless_mode should be headless
-                    "house_number": "number",     # house_number should be number
-                }
-                
-                # List of essential fields with correct parameter names
-                essential_fields = [
-                    "name", 
-                    "postcode", 
-                    "uprn", 
-                    "number",  
-                    "usrn", 
-                    "url", 
-                    "original_parser",
-                    "skip_get_url",
-                    "web_driver", 
-                    "headless",
-                    "local_browser",
-                    "manual_refresh_only", 
-                    "update_interval", 
-                    "timeout", 
-                    "icon_color_mapping"
-                ]
-                
-                # Create filtered data dictionary with correct parameter names
-                filtered_data = {}
-                for field in essential_fields:
-                    # Check if this field has a mapping (old name → new name)
-                    old_field = next((old for old, new in field_mappings.items() if new == field), field)
+                try:
+                    # Use the shared function to prepare the data
+                    filtered_data = prepare_config_data(self.data)
                     
-                    # Get value using the old field name from self.data
-                    value = self.data.get(old_field)
-                    
-                    # If value exists, add it to filtered_data with the correct field name
-                    if value is not None:
-                        filtered_data[field] = value
-                
-                # Save selected_council as council in the final config
-                filtered_data["council"] = council_key
-                
-                # Final validation for critical fields
-                if not filtered_data.get("council"):
-                    _LOGGER.error("Council not specified in configuration")
-                    errors["base"] = "missing_council"
-                elif not filtered_data.get("url"):
-                    _LOGGER.error("URL not specified in configuration")
-                    errors["base"] = "missing_url"
-                else:
                     _LOGGER.debug(f"Final configuration: {filtered_data}")
                     return self.async_create_entry(title=filtered_data["name"], data=filtered_data)
+                        
+                except ValueError as e:
+                    # Handle missing council error
+                    errors["base"] = "missing_council"
+                    _LOGGER.error(f"Configuration error: {e}")
+                except Exception as e:
+                    # Handle other errors
+                    errors["base"] = "unknown_error"
+                    _LOGGER.exception(f"Error preparing configuration data: {e}")
 
         return self.async_show_form(
             step_id="advanced",

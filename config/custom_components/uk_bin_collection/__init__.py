@@ -283,12 +283,21 @@ async def async_unload_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> 
 
 def build_ukbcd_args(config_data: dict) -> list:
     """Build the argument list for UKBinCollectionApp from config data."""
+    # Extract required values
     council = config_data.get("original_parser") or config_data.get("council", "")
     url = config_data.get("url", "")
-
+    
+    _LOGGER.debug(f"{LOG_PREFIX} Building args with council: {council}, url: {url}")
+    
+    # Ensure module name is set correctly - if both council and original_parser are empty,
+    # we need to handle this to prevent the "Empty module name" error
+    if not council:
+        _LOGGER.error(f"{LOG_PREFIX} No council or original_parser specified in configuration")
+        raise ConfigEntryNotReady("Missing council specification in configuration. Please reconfigure this integration.")
+        
     # Start with positional arguments
     args = [council, url]
-
+    
     # Add optional arguments in the format expected by argparse (--key=value)
     for key, value in config_data.items():
         if key in EXCLUDED_ARG_KEYS:

@@ -245,8 +245,92 @@ def map_wiki_name_to_council_key(wiki_name, council_options, council_names):
     except (ValueError, IndexError):
         _LOGGER.warning(f"Could not map wiki_name '{wiki_name}' to council key")
         return wiki_name  # Return the wiki_name as fallback
+
+def prepare_config_data(data: dict) -> dict:
+    """Prepare configuration data for saving to config entry.
     
+    Ensures critical fields are present and handles field mappings.
+    """
+    import logging
+    _LOGGER = logging.getLogger(__name__)
+    
+    # Define field mappings for parameter name corrections
+    field_mappings = {
+        "headless_mode": "headless",  # headless_mode should be headless
+        "house_number": "number",     # house_number should be number
+    }
+    
+    # List of essential fields with correct parameter names
+    essential_fields = [
+        "council",
+        "name", 
+        "postcode", 
+        "uprn", 
+        "number",  
+        "usrn", 
+        "url", 
+        "original_parser",
+        "skip_get_url",
+        "web_driver", 
+        "headless",
+        "local_browser",
+        "manual_refresh_only", 
+        "update_interval", 
+        "timeout", 
+        "icon_color_mapping"
+    ]
+    
+    # Start with council to ensure it's always present
+    council_key = data.get("selected_council") or data.get("council", "")
+    filtered_data = {}
+    
+    # Always include council if available (critical field)
+    if council_key:
+        filtered_data["council"] = council_key
+    
+    # Handle URL defaulting to council's URL if not provided by user
+    url = data.get("url")
+    if not url and council_key:
+        # Get council data to find default URL
+        council_data = data.get("council_list", {}).get(council_key, {})
+        url = council_data.get("url", "")
+    
+    # Add URL to filtered data if we have one
+    if url:
+        filtered_data["url"] = url
+
+    # If there's an original_parser, ensure it's preserved
+    if data.get("original_parser"):
+        filtered_data["original_parser"] = data["original_parser"]
+    
+    # Process remaining fields
+    for field in essential_fields:
+        # Skip council and original_parser as we've already handled them
+        if field in ["council", "original_parser"]:
+            continue
+            
+        # Check if this field has a mapping (old name → new name)
+        old_field = next((old for old, new in field_mappings.items() if new == field), field)
+        
+        # Get value using the old field name from data
+        value = data.get(old_field)
+        
+        # If value exists, add it to filtered_data with the correct field name
+        if value is not None:
+            filtered_data[field] = value
+    
+    # Log the final data for debugging
+    _LOGGER.debug(f"Prepared configuration data: {filtered_data}")
+    
+    # Validate critical fields
+    if not filtered_data.get("council") and not filtered_data.get("original_parser"):
+        _LOGGER.error("Critical error: Neither council nor original_parser specified in final data")
+        raise ValueError("Missing council specification in configuration")
+        
+    return filtered_data
+
 def is_valid_postcode(postcode: str) -> bool:
+    # Not currently used, because some councils use the postcode field for other purposes
     # UK postcode regex pattern
     postcode_regex = r"^(GIR 0AA|[A-PR-UWYZ][A-HK-Y]?[0-9][0-9A-HJKSTUW]? ?[0-9][ABD-HJLNP-UW-Z]{2})$"
     return re.match(postcode_regex, postcode.replace(" ", "").upper()) is not None
@@ -256,6 +340,7 @@ def is_valid_postcode(postcode: str) -> bool:
     #print(is_valid_postcode("INVALID"))   # False
 
 def is_valid_uprn(uprn: str) -> bool:
+    # Not currently used, because some councils use the UPRN field for other purposes
     return uprn.isdigit() and len(uprn) <= 12
     
     # Examples
