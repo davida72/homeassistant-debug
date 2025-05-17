@@ -84,50 +84,51 @@ async def initialisation_data(self):
         return self.async_abort(reason="council_data_unavailable")
     
     # Fetch property info using Home Assistant's configured coordinates
-    try:
-        # Get coordinates from Home Assistant configuration
-        if hasattr(self, 'hass') and self.hass is not None:
-            system_options = {}
-            try:
-                system_options = self.hass.config.system_options.as_dict()
-            except (AttributeError, KeyError):
-                pass
-                
+    self.data["property_info"] = {}  # Initialize as empty dict
+    
+    # Get coordinates from Home Assistant configuration
+    if hasattr(self, 'hass') and self.hass is not None:
+        try:
             latitude = self.hass.config.latitude
             longitude = self.hass.config.longitude
             
-            _LOGGER.debug("Fetching property info for coordinates: (%s, %s)", latitude, longitude)
-            property_info = await async_get_property_info(latitude, longitude)
-            self.data["property_info"] = property_info
-
-            # Attempt to auto-detect the council based on LAD24CD
-            lad_code = property_info.get("LAD24CD")
-            if lad_code:
-                for council_key, council_data in self.data["council_list"].items():
-                    if council_data.get("LAD24CD") == lad_code:
-                        self.data["detected_council"] = council_key
-                        self.data["detected_postcode"] = property_info.get("postcode")
-                        _LOGGER.info(f"Detected council: {council_data['wiki_name']} for LAD24CD: {lad_code}")
-                        break
-        else:
-            _LOGGER.warning("Home Assistant instance not available, cannot fetch property info")
-            self.data["property_info"] = None
-
-    except Exception as e:
-        _LOGGER.error(f"Error during property info fetch: {e}")
-        self.data["property_info"] = None
+            if latitude == 0 and longitude == 0:
+                _LOGGER.warning("Home location not set in Home Assistant configuration")
+            else:
+                _LOGGER.debug("Fetching property info for coordinates: (%s, %s)", latitude, longitude)
+                property_info = await async_get_property_info(latitude, longitude)
+                
+                # Only proceed if we got valid property info
+                if property_info:
+                    self.data["property_info"] = property_info
+                    
+                    # Attempt to auto-detect the council based on LAD24CD
+                    lad_code = property_info.get("LAD24CD")
+                    if lad_code:
+                        for council_key, council_data in self.data["council_list"].items():
+                            if council_data.get("LAD24CD") == lad_code:
+                                self.data["detected_council"] = council_key
+                                self.data["detected_postcode"] = property_info.get("postcode")
+                                _LOGGER.info(f"Detected council: {council_data['wiki_name']} for LAD24CD: {lad_code}")
+                                break
+                        else:
+                            _LOGGER.info(f"No matching council found for LAD24CD: {lad_code}")
+                else:
+                    _LOGGER.warning("Could not retrieve property information from coordinates")
+        except Exception as e:
+            _LOGGER.error(f"Error during property info processing: {e}")
+    else:
+        _LOGGER.warning("Home Assistant instance not available, cannot fetch property info")
 
     # Pre-check Selenium Servers
+    self.data["selenium_status"] = {}  # Initialize as empty dict
     try:
         _LOGGER.debug(f"Checking Selenium servers: {SELENIUM_SERVER_URLS}")
-        selenium_status = {}
         
         for url in SELENIUM_SERVER_URLS:
             is_available = await check_selenium_server(url)
-            selenium_status[url] = is_available
+            self.data["selenium_status"][url] = is_available
             _LOGGER.debug(f"Selenium server {url} is {'available' if is_available else 'unavailable'}")
-        
-        self.data["selenium_status"] = selenium_status
+            
     except Exception as e:
         _LOGGER.error(f"Error checking Selenium servers: {e}")
-        self.data["selenium_status"] = {}

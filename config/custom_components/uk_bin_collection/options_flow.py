@@ -25,18 +25,21 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for UkBinCollection."""
 
     def __init__(self, config_entry):
-        """Initialize options flow."""
-        self.config_entry = config_entry
-        self.data = dict(config_entry.data)
+        """Initialise options flow."""
+        self.data = {}
         self._initialized = False
         
-        # IMPORTANT: Ensure council is initialized from the start
+        # Copy any needed data from config_entry to self.data
+        if config_entry.data:
+            self.data.update(config_entry.data)
+        
+        # IMPORTANT: Ensure council is initialised from the start
         # If council doesn't exist in config data but original_parser does, use that
         if not self.data.get("council") and self.data.get("original_parser"):
             self.data["council"] = self.data["original_parser"]
             
         # Log the initial state for debugging
-        _LOGGER.debug(f"Options flow initialized with council: {self.data.get('council')}, original_parser: {self.data.get('original_parser')}")
+        _LOGGER.debug(f"Options flow initialised with council: {self.data.get('council')}, original_parser: {self.data.get('original_parser')}")
         
     async def async_step_init(self, user_input=None):
         """First step in options flow - redirect to user selection."""
@@ -199,7 +202,7 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
         
         errors = {}
 
-        # Initialize selenium_status if missing
+        # Initialise selenium_status if missing
         if "selenium_status" not in self.data:
             self.data["selenium_status"] = {}
 
