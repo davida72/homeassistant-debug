@@ -179,7 +179,12 @@ def build_selenium_schema(default_url=""):
 def build_advanced_schema(defaults=None) -> vol.Schema:
     """Schema for advanced settings configuration."""
     if defaults is None:
-        defaults = {}
+        defaults = {
+            "manual_refresh_only": False,
+            "update_interval": 12,
+            "timeout": 60,
+            "icon_color_mapping": ""
+        }
         
     # Get default values with fallbacks
     default_timeout = defaults.get("timeout", 60)  # Default 60 seconds
@@ -203,25 +208,6 @@ def build_advanced_schema(defaults=None) -> vol.Schema:
     })
     
     return schema
-
-# def build_options_schema(existing_data, council_options, council_names):
-#     """Build schema for the options flow."""
-#     # Find the current council's wiki_name
-#     council_key = existing_data.get("council", "")
-#     council_index = council_names.index(council_key) if council_key in council_names else 0
-#     selected_wiki_name = council_options[council_index] if council_index < len(council_options) else ""
-    
-#     # Create schema
-#     return vol.Schema(
-#         {
-#             vol.Required("council", default=selected_wiki_name): vol.In(council_options),
-#             vol.Required("timeout", default=existing_data.get("timeout", 60)): int,
-#             vol.Optional("update_interval", default=existing_data.get("update_interval", 12)): int,
-#             vol.Optional("manual_refresh_only", default=existing_data.get("manual_refresh_only", False)): bool,
-#             vol.Optional("icon_color_mapping", default=existing_data.get("icon_color_mapping", "")): str,
-#         }
-#     )
-
 
 # -----------------------------------------------------
 # 🔄 Utility Functions
@@ -340,6 +326,55 @@ def prepare_config_data(data: dict) -> dict:
         raise ValueError("Missing council specification in configuration")
         
     return filtered_data
+
+async def validate_selenium_config(user_input, data_dict):
+    """Validate Selenium configuration and determine if we can proceed.
+    
+    Args:
+        user_input: User input dictionary from the form
+        data_dict: Data dictionary to update with configuration results
+        
+    Returns:
+        tuple: (can_proceed, error_code)
+            - can_proceed: True if we can proceed to next step, False otherwise
+            - error_code: Error code if can_proceed is False, None otherwise
+    """
+    import logging
+    _LOGGER = logging.getLogger(__name__)
+    
+    # Get user selections
+    use_local_browser = user_input.get("local_browser", False)
+    web_driver_url = user_input.get("web_driver", "").strip()
+    
+    # Update data dictionary with user input
+    data_dict.update(user_input)
+    
+    # Check if Selenium server is accessible
+    if web_driver_url and use_local_browser == False:
+        is_accessible = await check_selenium_server(web_driver_url)
+
+        if is_accessible:
+            _LOGGER.debug(f"Selected Selenium URL {web_driver_url} is accessible")
+            return True, None
+        else:
+            _LOGGER.debug(f"Selected Selenium URL {web_driver_url} is NOT accessible")
+            return False, "selenium_unavailable"
+            
+    elif use_local_browser:
+        # Check if Chromium is installed
+        chromium_installed = await check_chromium_installed()
+        data_dict["chromium_installed"] = chromium_installed
+
+        if chromium_installed:
+            _LOGGER.debug("Local browser selected and Chromium is available")
+            return True, None
+        else:
+            _LOGGER.debug("Local browser selected but Chromium is not installed")
+            return False, "chromium_unavailable"
+    else:
+        # Neither Selenium nor Chromium is available
+        _LOGGER.debug("No Selenium method selected (neither URL provided nor local browser enabled)")
+        return False, "selenium_unavailable"
 
 def is_valid_postcode(postcode: str) -> bool:
     # Not currently used, because some councils use the postcode field for other purposes

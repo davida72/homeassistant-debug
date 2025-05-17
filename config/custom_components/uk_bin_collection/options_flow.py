@@ -13,10 +13,9 @@ from .utils import (
     build_council_schema,
     build_selenium_schema,
     build_advanced_schema,
-    check_chromium_installed,
-    check_selenium_server,
     is_valid_json,
-    prepare_config_data
+    prepare_config_data,
+    validate_selenium_config
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -131,6 +130,19 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
             description_placeholders=description_placeholders,
         )
     
+
+        # Dynamically set the description placeholders
+        description_placeholders = {
+            "step_user_description": "Modify your bin collection configuration."
+        }
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders=description_placeholders,
+        )
+    
     async def async_step_council_info(self, user_input=None):
         """Step 2: Configure Council Information."""
         errors = {}
@@ -208,50 +220,18 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
 
         # Get current selenium settings
         current_web_driver = self.data.get("web_driver", "")
-        current_headless = self.data.get("headless", True)
-        current_local_browser = self.data.get("local_browser", False)
         
         # Use the schema builder instead of manually creating a schema
         schema = build_selenium_schema(default_url=current_web_driver)
 
         if user_input is not None:
-            self.data.update(user_input)
+            # Use the shared function to validate selenium config
+            can_proceed, error_code = await validate_selenium_config(user_input, self.data)
             
-            # Get user selections
-            use_local_browser = user_input.get("local_browser", False)
-            web_driver_url = user_input.get("web_driver", "").strip()
-            
-            # Check if Selenium server is accessible
-            if web_driver_url:
-                is_accessible = await check_selenium_server(web_driver_url)
-
-                if is_accessible:
-                    _LOGGER.debug(f"Selected Selenium URL {web_driver_url} is accessible")
-                    # Selenium URL is accessible, proceed to the next step
-                    return await self.async_step_advanced()
-                else:
-                    errors["base"] = "selenium_unavailable"
-                    _LOGGER.debug(f"Selected Selenium URL {web_driver_url} is NOT accessible")
-            elif use_local_browser:
-                # Check if Chromium is installed
-                chromium_installed = await check_chromium_installed()
-                self.data["chromium_installed"] = chromium_installed
-
-                if chromium_installed:
-                    _LOGGER.debug("Local browser selected and Chromium is available")
-                    # Chromium is available, proceed to the next step
-                    return await self.async_step_advanced()
-                else:
-                    errors["base"] = "chromium_unavailable"
-                    _LOGGER.debug("Local browser selected but Chromium is not installed")
-            else:
-                # Neither Selenium nor Chromium is available
-                errors["base"] = "selenium_unavailable"
-                _LOGGER.debug("No Selenium method selected (neither URL provided nor local browser enabled)")
-
-            # If everything is valid, proceed to the next step
-            if not errors:
+            if can_proceed:
                 return await self.async_step_advanced()
+            elif error_code:
+                errors["base"] = error_code
 
         description_placeholders = {}
 
@@ -266,12 +246,26 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
         """Step 4: Advanced configuration."""
         errors = {}
         
-        # Get current advanced settings
+        # Get current advanced settings from the config entry
+        config_data = dict(self.config_entry.data)
+        
         advanced_defaults = {
-            "manual_refresh_only": self.data.get("manual_refresh_only", True),
-            "update_interval": self.data.get("update_interval", 12),
-            "timeout": self.data.get("timeout", 60),
-            "icon_color_mapping": self.data.get("icon_color_mapping", "")
+            "manual_refresh_only": self.data.get(
+                "manual_refresh_only", 
+                config_data.get("manual_refresh_only", False)
+            ),
+            "update_interval": self.data.get(
+                "update_interval", 
+                config_data.get("update_interval", 12)
+            ),
+            "timeout": self.data.get(
+                "timeout", 
+                config_data.get("timeout", 60)
+            ),
+            "icon_color_mapping": self.data.get(
+                "icon_color_mapping", 
+                config_data.get("icon_color_mapping", "")
+            )
         }
         
         # Use the schema builder instead of manually creating a schema
