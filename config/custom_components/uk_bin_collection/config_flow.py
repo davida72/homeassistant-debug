@@ -27,7 +27,6 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
         """Initialize the config flow."""
         self.data = {}
         self._initialized = False
-        self.options_flow = False  # Flag to indicate if this is being used in options flow
 
     async def async_step_user(self, user_input=None):
         """Step 1: Select Council."""
@@ -86,26 +85,24 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
                 self.data["original_parser"] = council_data["original_parser"]
                 _LOGGER.debug(f"Using original_parser '{council_data['original_parser']}' for council {council_key}")
             
-            # Only check for duplicates if this is a new entry (not options flow)
-            if not self.options_flow:
-                existing_entry = await async_entry_exists(self, user_input)
-                if existing_entry:
-                    errors["base"] = "duplicate_entry"
-                    _LOGGER.warning(
-                        "Duplicate entry found: %s", existing_entry.data.get("name")
-                    )
+            existing_entry = await async_entry_exists(self, user_input)
+            if existing_entry:
+                errors["base"] = "duplicate_entry"
+                _LOGGER.warning(
+                    "Duplicate entry found: %s", existing_entry.data.get("name")
+                )
             
             if not errors:
                 return await self.async_step_council_info()
 
         # Dynamically set the description placeholders
         description_placeholders = {}
-        if detected_council_name and not self.options_flow:
+        if detected_council_name:
             description_placeholders["step_user_description"] = "Council auto-selected based on location."
             _LOGGER.debug("Detected council: %s", detected_council_name)
         else:
             description_placeholders["step_user_description"] = f"Please [contact us](https://github.com/robbrad/UKBinCollectionData#requesting-your-council) if your council isn't listed."
-            _LOGGER.debug("No council detected or in options flow mode.")
+            _LOGGER.debug("No council detected.")
 
         return self.async_show_form(
             step_id="user",

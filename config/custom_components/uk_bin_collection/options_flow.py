@@ -63,16 +63,38 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
         # Sort wiki names for the dropdown
         wiki_names = sorted(wiki_names_map.keys())
         
-        # Get the current council key from the config entry
+        # Get the current council key and original parser from the config entry
         current_council_key = self.data.get("council", "")
+        current_original_parser = self.data.get("original_parser", "")
         current_wiki_name = None
         
-        # Find the wiki name for current council key
+        # Debug logging to see what we're working with
+        _LOGGER.debug(f"Looking up council for: council={current_council_key}, original_parser={current_original_parser}")
+        
+        # Simple approach: look through all councils for any match
         for wiki_name, council_key in wiki_names_map.items():
+            _LOGGER.debug(f"Comparing: {council_key} with {current_council_key}")
+
+            # Match by exact council key
+            # 2025-05-17 10:26:53.069 DEBUG (MainThread) [custom_components.uk_bin_collection.options_flow] Comparing: Clackmannanshire with ClackmannanshireCouncil
             if council_key == current_council_key:
                 current_wiki_name = wiki_name
+                _LOGGER.debug(f"Found council by exact match: {wiki_name}")
                 break
-                
+            
+            # # Match by original parser
+            # council_data = council_list.get(council_key, {})
+            # if council_data.get("original_parser") == current_original_parser:
+            #     current_wiki_name = wiki_name
+            #     _LOGGER.debug(f"Found council by original parser: {wiki_name}")
+            #     break
+        
+        # Log the result
+        if current_wiki_name:
+            _LOGGER.debug(f"Using {current_wiki_name} as the selected council")
+        else:
+            _LOGGER.warning(f"Could not find matching council for {current_council_key}")
+        
         # Get default name
         current_name = self.data.get("name", "")
         

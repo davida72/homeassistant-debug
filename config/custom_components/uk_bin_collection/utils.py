@@ -65,9 +65,7 @@ async def get_councils_json(url: str = None) -> Dict[str, Any]:
                                 alias_data = value.copy()
                                 alias_data["original_parser"] = key
                                 alias_data["wiki_command_url_override"] = "https://calendar.google.com/calendar/ical/XXXXX%40group.calendar.google.com/public/basic.ics"
-                                # Set wiki_name without any suffix for consistency
-                                alias_data["wiki_name"] = alias.replace('Council', ' Council')
-                                # Preserve wiki_note if it exists
+                                alias_data["wiki_name"] = alias
                                 if "wiki_note" in value:
                                     alias_data["wiki_note"] = value["wiki_note"]
                                 normalized_data[alias] = alias_data
