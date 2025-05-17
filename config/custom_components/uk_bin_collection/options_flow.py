@@ -156,7 +156,7 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
         default_values = {
             "postcode": self.data.get("postcode", ""),
             "uprn": self.data.get("uprn", ""),
-            "house_number": self.data.get("number", ""),  # 'number' in final data, 'house_number' in schema
+            "house_number": self.data.get("number", ""), 
             "usrn": self.data.get("usrn", ""),
             "url": self.data.get("url", wiki_command_url_override)
         }

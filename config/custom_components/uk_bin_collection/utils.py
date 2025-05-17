@@ -6,9 +6,6 @@ import voluptuous as vol
 import shutil
 import re
 
-from voluptuous import Schema, Required, Optional
-from typing import List, Dict, Any
-
 from typing import Dict, Any, Optional
 from .const import BROWSER_BINARIES
 from homeassistant import config_entries
@@ -58,7 +55,7 @@ async def get_councils_json(url: str = None) -> Dict[str, Any]:
                     _LOGGER.debug("Detected old format JSON (input.json style)")
                     # Process old format
                     for key, value in council_data.items():
-                        normalized_data[key] = valsue
+                        normalized_data[key] = value
                         # If this is GooglePublicCalendarCouncil, process its supported councils
                         if key == "GooglePublicCalendarCouncil" and "supported_councils" in value:
                             for alias in value.get("supported_councils", []):
@@ -150,7 +147,7 @@ def build_user_schema(wiki_names, default_name="", default_council=None, include
     schema = vol.Schema(schema_dict)
     return schema
 
-def build_council_schema(council_key: str, council_data: Dict[str, Any], defaults: Dict[str, str] = {}) -> Schema:
+def build_council_schema(council_key: str, council_data: Dict[str, Any], defaults: Dict[str, str] = {}) -> vol.Schema:
     """Schema for configuring council-specific information."""
     fields = {}
     if "postcode" in council_data:
@@ -165,7 +162,7 @@ def build_council_schema(council_key: str, council_data: Dict[str, Any], default
         fields[vol.Optional("url", default=defaults.get("url", ""))] = str
 
     _LOGGER.debug(f"Building council schema for {council_key} with fields: {list(fields.keys())}")
-    return Schema(fields)
+    return vol.Schema(fields)
 
 
 def build_selenium_schema(default_url=""):
@@ -179,7 +176,7 @@ def build_selenium_schema(default_url=""):
         vol.Optional("local_browser", default=False): bool,
     })
 
-def build_advanced_schema(defaults=None) -> Schema:
+def build_advanced_schema(defaults=None) -> vol.Schema:
     """Schema for advanced settings configuration."""
     if defaults is None:
         defaults = {}
