@@ -136,17 +136,19 @@ def _sync_check_chromium() -> bool:
 # 🔄 Schema Builders
 # -----------------------------------------------------
 
-def build_user_schema(wiki_names, default_name="", default_council=None):
-    """Build schema for the user step of the config flow."""
-    
-    # For debugging
-    _LOGGER.debug(f"Building schema with default_name={default_name}, default_council={default_council}")
-    
-    return vol.Schema({
+def build_user_schema(wiki_names, default_name="", default_council=None, include_test_data=False):
+    """Build schema for user step."""
+    schema_dict = {
         vol.Required("name", default=default_name): str,
-        vol.Required("selected_council", default=default_council): vol.In(wiki_names)
-    })
-
+        vol.Required("selected_council", default=default_council): vol.In(wiki_names),
+    }
+    
+    # Only include the test data checkbox if specified
+    if include_test_data:
+        schema_dict[vol.Optional("use_test_data", default=False)] = bool
+        
+    schema = vol.Schema(schema_dict)
+    return schema
 
 def build_council_schema(council_key: str, council_data: Dict[str, Any], defaults: Dict[str, str] = {}) -> Schema:
     """Schema for configuring council-specific information."""

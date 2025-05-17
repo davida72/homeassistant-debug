@@ -71,24 +71,14 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
         # Debug logging to see what we're working with
         _LOGGER.debug(f"Looking up council for: council={current_council_key}, original_parser={current_original_parser}")
         
-        # Simple approach: look through all councils for any match
         for wiki_name, council_key in wiki_names_map.items():
-            _LOGGER.debug(f"Comparing: {council_key} with {current_council_key}")
 
             # Match by exact council key
-            # 2025-05-17 10:26:53.069 DEBUG (MainThread) [custom_components.uk_bin_collection.options_flow] Comparing: Clackmannanshire with ClackmannanshireCouncil
             if council_key == current_council_key:
                 current_wiki_name = wiki_name
                 _LOGGER.debug(f"Found council by exact match: {wiki_name}")
                 break
             
-            # # Match by original parser
-            # council_data = council_list.get(council_key, {})
-            # if council_data.get("original_parser") == current_original_parser:
-            #     current_wiki_name = wiki_name
-            #     _LOGGER.debug(f"Found council by original parser: {wiki_name}")
-            #     break
-        
         # Log the result
         if current_wiki_name:
             _LOGGER.debug(f"Using {current_wiki_name} as the selected council")
@@ -101,7 +91,8 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
         schema = build_user_schema(
             wiki_names=wiki_names,
             default_name=current_name,
-            default_council=current_wiki_name
+            default_council=current_wiki_name,
+            include_test_data=True 
         )
         
         if user_input is not None:
@@ -113,6 +104,9 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
             self.data["selected_wiki_name"] = selected_wiki_name
             self.data["selected_council"] = council_key
             
+            # Store whether to use test data
+            self.data["use_test_data"] = user_input.get("use_test_data", False)
+
             # Preserve the original_parser if present in council data
             council_data = council_list.get(council_key, {})
             if "original_parser" in council_data:
@@ -166,6 +160,24 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
             "usrn": self.data.get("usrn", ""),
             "url": self.data.get("url", wiki_command_url_override)
         }
+
+        # If user selected to use test data, replace with values from council_data
+        if self.data.get("use_test_data", False):
+            _LOGGER.debug(f"Using test data for council {council_key}")
+            
+            # Map the test data fields to the form fields
+            if "postcode" in council_data:
+                default_values["postcode"] = council_data["postcode"]
+            if "house_number" in council_data:
+                default_values["house_number"] = council_data["house_number"]
+            if "uprn" in council_data:
+                default_values["uprn"] = council_data["uprn"]
+            if "usrn" in council_data:
+                default_values["usrn"] = council_data["usrn"]
+            if "url" in council_data:
+                default_values["url"] = council_data["url"]
+                
+            _LOGGER.debug(f"Test data values: {default_values}")
 
         wiki_note = council_data.get("wiki_note", "No additional notes available for this council.")
         

@@ -63,7 +63,8 @@
                 "description": "Update your bin collection configuration",
                 "data": {
                     "name": "Name",
-                    "selected_council": "Council"
+                    "selected_council": "Council",
+                    "use_test_data": "Replace your settings test settings"
                 }
             },
             "council_info": {
