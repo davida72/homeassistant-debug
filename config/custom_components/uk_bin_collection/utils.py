@@ -184,32 +184,46 @@ def build_advanced_schema(defaults=None) -> Schema:
     if defaults is None:
         defaults = {}
         
-    _LOGGER.debug("Building advanced schema with defaults: %s", defaults)
-    return Schema({
-        vol.Optional("manual_refresh_only", default=defaults.get("manual_refresh_only", True)): bool,
-        vol.Optional("update_interval", default=defaults.get("update_interval", 12)): int,
-        vol.Optional("timeout", default=defaults.get("timeout", 60)): int,
-        vol.Optional("icon_color_mapping", default=defaults.get("icon_color_mapping", "")): str
-    })
-
-
-def build_options_schema(existing_data, council_options, council_names):
-    """Build schema for the options flow."""
-    # Find the current council's wiki_name
-    council_key = existing_data.get("council", "")
-    council_index = council_names.index(council_key) if council_key in council_names else 0
-    selected_wiki_name = council_options[council_index] if council_index < len(council_options) else ""
+    # Get default values with fallbacks
+    default_timeout = defaults.get("timeout", 60)  # Default 60 seconds
+    default_update_interval = defaults.get("update_interval", 12)  # Default 12 hours
+    default_manual_refresh = defaults.get("manual_refresh_only", False)
+    default_icon_mapping = defaults.get("icon_color_mapping", "")
+        
+    # _LOGGER.debug("Building advanced schema with defaults: %s", defaults)
     
-    # Create schema
-    return vol.Schema(
-        {
-            vol.Required("council", default=selected_wiki_name): vol.In(council_options),
-            vol.Required("timeout", default=existing_data.get("timeout", 60)): int,
-            vol.Optional("update_interval", default=existing_data.get("update_interval", 12)): int,
-            vol.Optional("manual_refresh_only", default=existing_data.get("manual_refresh_only", False)): bool,
-            vol.Optional("icon_color_mapping", default=existing_data.get("icon_color_mapping", "")): str,
-        }
-    )
+    schema = vol.Schema({
+        vol.Optional("timeout", default=default_timeout): vol.All(
+            vol.Coerce(int),  # Convert to integer
+            vol.Range(min=10, msg="Timeout must be at least 10 seconds"), 
+        ),
+        vol.Optional("update_interval", default=default_update_interval): vol.All(
+            vol.Coerce(int),  # Convert to integer
+            vol.Range(min=1, msg="Update interval must be at least 1 hour"),
+        ),
+        vol.Optional("manual_refresh_only", default=default_manual_refresh): bool,
+        vol.Optional("icon_color_mapping", default=default_icon_mapping): str,
+    })
+    
+    return schema
+
+# def build_options_schema(existing_data, council_options, council_names):
+#     """Build schema for the options flow."""
+#     # Find the current council's wiki_name
+#     council_key = existing_data.get("council", "")
+#     council_index = council_names.index(council_key) if council_key in council_names else 0
+#     selected_wiki_name = council_options[council_index] if council_index < len(council_options) else ""
+    
+#     # Create schema
+#     return vol.Schema(
+#         {
+#             vol.Required("council", default=selected_wiki_name): vol.In(council_options),
+#             vol.Required("timeout", default=existing_data.get("timeout", 60)): int,
+#             vol.Optional("update_interval", default=existing_data.get("update_interval", 12)): int,
+#             vol.Optional("manual_refresh_only", default=existing_data.get("manual_refresh_only", False)): bool,
+#             vol.Optional("icon_color_mapping", default=existing_data.get("icon_color_mapping", "")): str,
+#         }
+#     )
 
 
 # -----------------------------------------------------
@@ -225,7 +239,17 @@ def is_valid_json(json_string: str) -> bool:
     except ValueError as e:
         _LOGGER.debug(f"Invalid JSON string: {e}")
         return False
-    
+
+def is_valid_json_validator(value):
+    """Validator function for JSON strings."""
+    if not value:
+        return value
+    try:
+        json.loads(value)
+        return value
+    except ValueError as e:
+        raise vol.Invalid(f"Invalid JSON: {e}")
+
 async def async_entry_exists(
     flow, user_input: Dict[str, Any]
 ) -> Optional[config_entries.ConfigEntry]:

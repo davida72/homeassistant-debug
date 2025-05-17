@@ -237,23 +237,6 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
             if not errors:
                 self.data.update(user_input)
                 
-                # # Get council data for fallback values
-                # council_key = self.data.get("selected_council", "")
-                # council_data = self.data.get("council_list", {}).get(council_key, {})
-                
-                # # If the user hasn't provided a URL, use the default from the council data
-                # if not self.data.get("url"):
-                #     _LOGGER.debug(f"URL is missing, attempting to use council's default URL")
-                #     default_url = council_data.get("url", "")
-                #     self.data["url"] = default_url
-                #     _LOGGER.debug(f"Using council's default URL: {default_url}")
-                
-                # # If skip_get_url is missing, get it from council data
-                # if "skip_get_url" not in self.data:
-                #     skip_get_url = council_data.get("skip_get_url", False)
-                #     self.data["skip_get_url"] = skip_get_url
-                #     _LOGGER.debug(f"Using council's skip_get_url value: {skip_get_url}")
-                
                 try:
                     # Use the shared function to prepare the data
                     filtered_data = prepare_config_data(self.data)
@@ -261,10 +244,6 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
                     _LOGGER.debug(f"Final configuration: {filtered_data}")
                     return self.async_create_entry(title=filtered_data["name"], data=filtered_data)
                         
-                except ValueError as e:
-                    # Handle missing council error
-                    errors["base"] = "missing_council"
-                    _LOGGER.error(f"Configuration error: {e}")
                 except Exception as e:
                     # Handle other errors
                     errors["base"] = "unknown_error"

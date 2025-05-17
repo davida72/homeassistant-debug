@@ -64,7 +64,7 @@
                 "data": {
                     "name": "Name",
                     "selected_council": "Council",
-                    "use_test_data": "Replace your settings test settings"
+                    "use_test_data": "Replace your council settings with test settings"
                 }
             },
             "council_info": {
