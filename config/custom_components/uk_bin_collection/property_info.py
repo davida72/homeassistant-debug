@@ -77,26 +77,3 @@ async def async_get_property_info(lat, lng):
         "postal_town": postal_town or ""  # Return empty string if postal_town not found
     }
 
-if __name__ == "__main__":
-    import sys
-    import asyncio
-    from pprint import pprint
-    
-    async def main():
-        if len(sys.argv) != 3:
-            print("Usage: python config_flow.py <latitude> <longitude>")
-            print("Example: python config_flow.py 50.831293 -0.157726")
-            sys.exit(1)
-        
-        try:
-            # Remove any commas from the input coordinates
-            lat = float(sys.argv[1].replace(',', ''))
-            lng = float(sys.argv[2].replace(',', ''))
-            info = await async_get_property_info(lat, lng)
-            pprint(info)
-        except ValueError as e:
-            print(f"Error: {e}")
-            sys.exit(1)
-    
-    if len(sys.argv) > 1:  # Only run if arguments are provided
-        asyncio.run(main())

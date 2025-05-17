@@ -58,7 +58,7 @@ async def get_councils_json(url: str = None) -> Dict[str, Any]:
                     _LOGGER.debug("Detected old format JSON (input.json style)")
                     # Process old format
                     for key, value in council_data.items():
-                        normalized_data[key] = value
+                        normalized_data[key] = valsue
                         # If this is GooglePublicCalendarCouncil, process its supported councils
                         if key == "GooglePublicCalendarCouncil" and "supported_councils" in value:
                             for alias in value.get("supported_councils", []):
@@ -260,15 +260,6 @@ async def async_entry_exists(
         if entry.data.get("council") == user_input.get("council") and entry.data.get("url") == user_input.get("url"):
             return entry
     return None
-
-def map_wiki_name_to_council_key(wiki_name, council_options, council_names):
-    """Maps a wiki_name back to the council key."""
-    try:
-        index = council_options.index(wiki_name)
-        return council_names[index]
-    except (ValueError, IndexError):
-        _LOGGER.warning(f"Could not map wiki_name '{wiki_name}' to council key")
-        return wiki_name  # Return the wiki_name as fallback
 
 def prepare_config_data(data: dict) -> dict:
     """Prepare configuration data for saving to config entry.
