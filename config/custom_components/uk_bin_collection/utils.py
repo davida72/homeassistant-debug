@@ -21,9 +21,8 @@ async def get_councils_json(url: str = None) -> Dict[str, Any]:
     Fetch council data from a JSON URL.
     
     This function can handle both data formats:
-    - Old format (input.json): Where GooglePublicCalendarCouncil contains supported_councils
-    - New format (new-input.json): Where councils directly reference GooglePublicCalendarCouncil 
-      via original_parser
+    - Old format: Where GooglePublicCalendarCouncil contains supported_councils
+    - New format: Where councils directly reference GooglePublicCalendarCouncil via original_parser
     
     This function ensures the output is consistent regardless of input format, maintaining
     the same user experience by preserving council names in the wiki_name field.
