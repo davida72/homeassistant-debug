@@ -23,19 +23,19 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
     VERSION = 3
     
     def __init__(self):
-        """Initialize the config flow."""
+        """Initialise the config flow.""" 
         self.data = {}
-        self._initialized = False
+        self._initialised = False 
 
     async def async_step_user(self, user_input=None):
         """Step 1: Select Council."""
         
         errors = {}
         
-        # Only run initialization once if not already initialized
-        if not self._initialized:
+        # Only run initialisation once if not already initialised  # Changed both instances
+        if not self._initialised:  
             await initialisation_data(self)
-            self._initialized = True
+            self._initialised = True  
         
         # Create a mapping of wiki names to council keys
         council_list = self.data.get("council_list", {})
@@ -164,7 +164,7 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
             _LOGGER.debug(f"Selenium status: {self.data['selenium_status']}")
         else:
             _LOGGER.warning("No selenium_status in self.data")
-            # Initialize it if missing
+            # Initialise it if missing 
             self.data["selenium_status"] = {}
 
         # Get default selenium URL (first working one)
@@ -197,7 +197,7 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
 
         # Get current advanced settings
         advanced_defaults = {
-            "manual_refresh_only": self.data.get("manual_refresh_only", False), 
+            "automatically_refresh": self.data.get("automatically_refresh", True), 
             "update_interval": self.data.get("update_interval", 12),
             "timeout": self.data.get("timeout", 60),
             "icon_color_mapping": self.data.get("icon_color_mapping", "")

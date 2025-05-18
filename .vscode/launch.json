@@ -14,6 +14,36 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Python: Selenium Test",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "standalone_tests/test_bin_collection_selenium.py",
+                "-v"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Playwright Test",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "standalone_tests/test_bin_collection_playwright.py",
+                "-v",
+                "--browser",
+                "chromium",
+                "--headed"  // This makes the browser visible while testing
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PWDEBUG": "1"  // Enables Playwright's special debug mode
+            }
         }
     ]
 }

@@ -13,7 +13,6 @@ from .utils import (
     build_council_schema,
     build_selenium_schema,
     build_advanced_schema,
-    is_valid_json,
     prepare_config_data,
     validate_selenium_config
 )
@@ -25,12 +24,13 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry):
         """Initialise options flow."""
-        self.data = {}
-        self._initialized = False
+        self.config_entry = config_entry
+        # Initialise self.options with existing options
+        self.options = dict(config_entry.options)
         
-        # Copy any needed data from config_entry to self.data
-        if config_entry.data:
-            self.data.update(config_entry.data)
+        # Initialise self.data from config_entry data
+        self.data = dict(config_entry.data) if config_entry.data else {}
+        self._initialised = False 
         
         # IMPORTANT: Ensure council is initialised from the start
         # If council doesn't exist in config data but original_parser does, use that
@@ -42,10 +42,10 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
         
     async def async_step_init(self, user_input=None):
         """First step in options flow - redirect to user selection."""
-        # Initialize the handler with councils data
-        if not self._initialized:
+        # Initialise the handler with councils data  
+        if not self._initialised:  
             await initialisation_data(self)
-            self._initialized = True
+            self._initialised = True  
             
         # Redirect to the first step (user selection)
         return await self.async_step_user()
@@ -243,78 +243,45 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
     async def async_step_advanced(self, user_input=None):
-        """Step 4: Advanced configuration."""
-        errors = {}
-        
-        # Get current advanced settings from the config entry
-        config_data = dict(self.config_entry.data)
-        
-        advanced_defaults = {
-            "manual_refresh_only": self.data.get(
-                "manual_refresh_only", 
-                config_data.get("manual_refresh_only", False)
-            ),
-            "update_interval": self.data.get(
-                "update_interval", 
-                config_data.get("update_interval", 12)
-            ),
-            "timeout": self.data.get(
-                "timeout", 
-                config_data.get("timeout", 60)
-            ),
-            "icon_color_mapping": self.data.get(
-                "icon_color_mapping", 
-                config_data.get("icon_color_mapping", "")
-            )
-        }
-        
-        # Use the schema builder instead of manually creating a schema
-        schema = build_advanced_schema(defaults=advanced_defaults)
-
+        """Handle advanced options."""
         if user_input is not None:
-            # Check if icon_color_mapping is valid JSON if provided
-            if user_input.get("icon_color_mapping"):
-                if not is_valid_json(user_input["icon_color_mapping"]):
-                    errors["icon_color_mapping"] = "invalid_json"
-                    _LOGGER.warning("Invalid JSON in icon_color_mapping field")
-            
-            if not errors:
-                # Update the data with the user input
-                self.data.update(user_input)
-                
-                try:
-                    # Use the shared function to prepare the data
-                    filtered_data = prepare_config_data(self.data)
-                    
-                    # Update the config entry with the new data
-                    self.hass.config_entries.async_update_entry(
-                        self.config_entry,
-                        data=filtered_data
-                    )
-                    
-                    # Trigger a reload for the config entry
-                    await self.hass.config_entries.async_reload(self.config_entry.entry_id)
-                    _LOGGER.info(f"Successfully updated and reloaded config entry {self.config_entry.entry_id}")
-                    
-                except ValueError as e:
-                    return self.async_show_form(
-                        step_id="advanced",
-                        data_schema=schema,
-                        errors=errors
-                    )
-                except Exception as e:
-                    _LOGGER.exception(f"Error updating config entry: {e}")
-                    errors["base"] = "update_failed"
-                    return self.async_show_form(
-                        step_id="advanced",
-                        data_schema=schema,
-                        errors=errors
-                    )
-                
-                return self.async_create_entry(title="", data={})
-
+            # User submitted the form - pass is_options_flow=True to skip critical field validation
+            self.options.update(prepare_config_data(user_input, is_options_flow=True))
+            return self.async_create_entry(title="", data=self.options)
+        
+        # Get defaults from current config
+        defaults = get_advanced_defaults(self.config_entry)
+        
+        # Create schema with the defaults
+        schema = build_advanced_schema(defaults)
+        
         return self.async_show_form(
             step_id="advanced",
             data_schema=schema,
-            errors=errors
         )
+
+# When loading settings for the options flow
+def get_advanced_defaults(config_entry):
+    """Get defaults for advanced settings from the config entry."""
+    defaults = {
+        # Map from manual_refresh_only to automatically_refresh
+        # Note: They represent the same setting but with different names
+        # Also see the field_mappings section in prepare_config_data in utils.py
+        "automatically_refresh": config_entry.options.get(
+            "manual_refresh_only",  
+            config_entry.data.get("manual_refresh_only", True)
+        ),
+        "update_interval": config_entry.options.get(
+            "update_interval", 
+            config_entry.data.get("update_interval", 12)
+        ),
+        "timeout": config_entry.options.get(
+            "timeout", 
+            config_entry.data.get("timeout", 60)
+        ),
+        "icon_color_mapping": config_entry.options.get(
+            "icon_color_mapping", 
+            config_entry.data.get("icon_color_mapping", "")
+        )
+    }
+    return defaults

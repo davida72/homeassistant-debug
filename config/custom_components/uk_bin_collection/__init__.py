@@ -33,7 +33,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     try:
         hass.data.setdefault(DOMAIN, {})
         _LOGGER.debug(
-            f"{LOG_PREFIX} hass.data[DOMAIN] initialized: {hass.data[DOMAIN]}"
+            f"{LOG_PREFIX} hass.data[DOMAIN] initialised: {hass.data[DOMAIN]}"  
         )
 
         async def handle_manual_refresh(call):
@@ -192,12 +192,12 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         args = build_ukbcd_args(config_entry.data)
         _LOGGER.debug(f"{LOG_PREFIX} UKBinCollectionApp args: {args}")
 
-        # Initialize the UK Bin Collection Data application
+        # Initialise the UK Bin Collection Data application
         ukbcd = UKBinCollectionApp()
         ukbcd.set_args(args)
-        _LOGGER.debug(f"{LOG_PREFIX} UKBinCollectionApp initialized and arguments set.")
+        _LOGGER.debug(f"{LOG_PREFIX} UKBinCollectionApp initialised and arguments set.") 
 
-        # Initialize the data coordinator
+        # Initialise the data coordinator
         coordinator = HouseholdBinCoordinator(
             hass,
             ukbcd,
@@ -207,7 +207,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         )
 
         _LOGGER.debug(
-            f"{LOG_PREFIX} HouseholdBinCoordinator initialized with update_interval={update_interval}."
+            f"{LOG_PREFIX} HouseholdBinCoordinator initialised with update_interval={update_interval}."  
         )
 
         # Perform first refresh
@@ -329,7 +329,7 @@ class HouseholdBinCoordinator(DataUpdateCoordinator):
         timeout: int = 60,
         update_interval: timedelta = timedelta(hours=12),
     ) -> None:
-        """Initialize the data coordinator."""
+        """Initialise the data coordinator.""" 
         super().__init__(
             hass,
             _LOGGER,

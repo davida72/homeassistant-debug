@@ -35,7 +35,7 @@
             "advanced": {
                 "title": "Advanced Configuration",
                 "data": {
-                    "manual_refresh_only": "Disable automatic updates",
+                    "automatically_refresh": "Automatically refresh the sensor",
                     "update_interval": "Time in hours between updates",
                     "timeout": "The time in seconds for how long the sensor should wait for data",
                     "icon_color_mapping": "JSON to map Bin Type for Colour and Icon see: https://github.com/robbrad/UKBinCollectionData"
@@ -92,7 +92,7 @@
             "advanced": {
                 "title": "Update Advanced Configuration",
                 "data": {
-                    "manual_refresh_only": "Disable automatic updates",
+                    "automatically_refresh": "Automatically refresh the sensor",
                     "update_interval": "Time in hours between updates",
                     "timeout": "The time in seconds for how long the sensor should wait for data",
                     "icon_color_mapping": "JSON to map Bin Type for Colour and Icon see: https://github.com/robbrad/UKBinCollectionData"

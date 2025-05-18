@@ -49,13 +49,13 @@ async def get_councils_json(url: str = None) -> Dict[str, Any]:
                 # Check if we're dealing with the old format by looking for supported_councils in GooglePublicCalendarCouncil
                 is_old_format = "GooglePublicCalendarCouncil" in council_data and "supported_councils" in council_data["GooglePublicCalendarCouncil"]
                 
-                normalized_data = {}
+                normalised_data = {}
                 
                 if is_old_format:
                     _LOGGER.debug("Detected old format JSON (input.json style)")
                     # Process old format
                     for key, value in council_data.items():
-                        normalized_data[key] = value
+                        normalised_data[key] = value
                         # If this is GooglePublicCalendarCouncil, process its supported councils
                         if key == "GooglePublicCalendarCouncil" and "supported_councils" in value:
                             for alias in value.get("supported_councils", []):
@@ -65,18 +65,19 @@ async def get_councils_json(url: str = None) -> Dict[str, Any]:
                                 alias_data["wiki_name"] = alias
                                 if "wiki_note" in value:
                                     alias_data["wiki_note"] = value["wiki_note"]
-                                normalized_data[alias] = alias_data
+                                normalised_data[alias] = alias_data
                 else:
                     _LOGGER.debug("Detected new format JSON (placeholder_input.json style)")
                     # Process new format - all councils are already first-class entries with their own complete data
-                    normalized_data = council_data.copy()
+                    normalised_data = council_data.copy()
                     # No special handling needed for GooglePublicCalendarCouncil councils
                     # as they're already properly defined in the new format
                 
                 # Sort alphabetically by key (council ID)
-                sorted_data = dict(sorted(normalized_data.items()))
+                sorted_data = dict(sorted(normalised_data.items()))
                 
                 _LOGGER.debug("Loaded %d councils", len(sorted_data))
+                _LOGGER.debug("Normalised council data: %d entries", len(normalised_data))  
                 return sorted_data
             
     except aiohttp.ClientError as e:
@@ -180,7 +181,7 @@ def build_advanced_schema(defaults=None) -> vol.Schema:
     """Schema for advanced settings configuration."""
     if defaults is None:
         defaults = {
-            "manual_refresh_only": False,
+            "automatically_refresh": True,
             "update_interval": 12,
             "timeout": 60,
             "icon_color_mapping": ""
@@ -189,7 +190,7 @@ def build_advanced_schema(defaults=None) -> vol.Schema:
     # Get default values with fallbacks
     default_timeout = defaults.get("timeout", 60)  # Default 60 seconds
     default_update_interval = defaults.get("update_interval", 12)  # Default 12 hours
-    default_manual_refresh = defaults.get("manual_refresh_only", False)
+    default_automatically_refresh = defaults.get("automatically_refresh", True)
     default_icon_mapping = defaults.get("icon_color_mapping", "")
         
     # _LOGGER.debug("Building advanced schema with defaults: %s", defaults)
@@ -203,7 +204,7 @@ def build_advanced_schema(defaults=None) -> vol.Schema:
             vol.Coerce(int),  # Convert to integer
             vol.Range(min=1, msg="Update interval must be at least 1 hour"),
         ),
-        vol.Optional("manual_refresh_only", default=default_manual_refresh): bool,
+        vol.Optional("automatically_refresh", default=default_automatically_refresh): bool,
         vol.Optional("icon_color_mapping", default=default_icon_mapping): str,
     })
     
@@ -244,10 +245,14 @@ async def async_entry_exists(
             return entry
     return None
 
-def prepare_config_data(data: dict) -> dict:
+def prepare_config_data(data: dict, is_options_flow=False) -> dict:
     """Prepare configuration data for saving to config entry.
     
     Ensures critical fields are present and handles field mappings.
+    
+    Args:
+        data: The input data dictionary
+        is_options_flow: Whether this is being called from options flow (skips critical field validation)
     """
     import logging
     _LOGGER = logging.getLogger(__name__)
@@ -256,6 +261,10 @@ def prepare_config_data(data: dict) -> dict:
     field_mappings = {
         "headless_mode": "headless",  # headless_mode should be headless
         "house_number": "number",     # house_number should be number
+        # This is confusing, but seems 'manual_refresh_only' actually means 'automatically_refresh'
+        # So we map it to 'manual_refresh_only' for the config entry
+        # https://github.com/robbrad/UKBinCollectionData/discussions/1449
+        "automatically_refresh": "manual_refresh_only", 
     }
     
     # List of essential fields with correct parameter names
@@ -316,14 +325,16 @@ def prepare_config_data(data: dict) -> dict:
         # If value exists, add it to filtered_data with the correct field name
         if value is not None:
             filtered_data[field] = value
-    
+
     # Log the final data for debugging
     _LOGGER.debug(f"Prepared configuration data: {filtered_data}")
     
-    # Validate critical fields
-    if not filtered_data.get("council") and not filtered_data.get("original_parser"):
-        _LOGGER.error("Critical error: Neither council nor original_parser specified in final data")
-        raise ValueError("Missing council specification in configuration")
+    # Skip validation for critical fields in options flow since they're preserved in the entry
+    if not is_options_flow:
+        # Validate critical fields only for initial config
+        if not filtered_data.get("council") and not filtered_data.get("original_parser"):
+            _LOGGER.error("Critical error: Neither council nor original_parser specified in final data")
+            raise ValueError("Missing council specification in configuration")
         
     return filtered_data
 
