@@ -22,7 +22,7 @@ async def get_councils_json(url: str = None) -> Dict[str, Any]:
     
     This function can handle both data formats:
     - Old format (input.json): Where GooglePublicCalendarCouncil contains supported_councils
-    - New format (placeholder_input.json): Where councils directly reference GooglePublicCalendarCouncil 
+    - New format (new-input.json): Where councils directly reference GooglePublicCalendarCouncil 
       via original_parser
     
     This function ensures the output is consistent regardless of input format, maintaining

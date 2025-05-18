@@ -1,287 +1,59 @@
-"""Test for options flow."""
-from unittest.mock import patch, MagicMock
-import pytest
-
-from homeassistant import config_entries
-from homeassistant.data_entry_flow import FlowResultType
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-
-from custom_components.uk_bin_collection.options_flow import UkBinCollectionOptionsFlowHandler
-from custom_components.uk_bin_collection.const import DOMAIN
-
-
-@pytest.fixture
-def config_entry():
-    """Return a mocked config entry."""
-    return MockConfigEntry(
-        domain=DOMAIN,
-        data={
-            "name": "Test Collection",
-            "council": "TestCouncil",
-            "original_parser": "TestCouncil", 
-            "postcode": "SW1A 1AA",
-            "number": "10",
-            "timeout": 60,
-            "update_interval": 12,
-            "manual_refresh_only": False,
-            "icon_color_mapping": "{}",
-            "url": "http://example.com",
-        },
-        options={
-            "timeout": 60,
-            "update_interval": 12,
-            "manual_refresh_only": False,
-            "icon_color_mapping": "{}",
-        },
-        title="Test Collection",
-    )
-
-
-@pytest.fixture
-def flow(config_entry):
-    """Return an options flow."""
-    return UkBinCollectionOptionsFlowHandler(config_entry)
-
-
-@pytest.fixture
-def mock_init():
-    """Mock the initialisation data function."""
-    with patch("custom_components.uk_bin_collection.options_flow.initialisation_data") as mock_init:
-        yield mock_init
-
-
-@pytest.fixture
-def mock_utils():
-    """Mock the utility functions."""
-    with patch("custom_components.uk_bin_collection.options_flow.prepare_config_data") as mock_prep:
-        with patch("custom_components.uk_bin_collection.options_flow.validate_selenium_config", 
-                  return_value=(True, None)) as mock_validate:
-            mock_prep.return_value = {
-                "timeout": 60,
-                "update_interval": 12,
-                "manual_refresh_only": False,
-                "icon_color_mapping": "{}",
+{
+    "title": "Sonraí Bailithe Binn RA",
+    "config": {
+        "step": {
+            "user": {
+                "title": "Roghnaigh an chomhairle",
+                "data": {
+                    "name": "Ainm Suíomh",
+                    "council": "Comhairle",
+                    "manual_refresh_only": "Athnuaigh an braiteoir go huathoibríoch",
+                    "icon_color_mapping": "JSON chun Cineál Bin a mhapáil do Dath agus Deilbhín féach: https://github.com/robbrad/UKBinCollectionData"
+                },
+                "description": "Féach [anseo](https://github.com/robbrad/UKBinCollectionData#requesting-your-council) mura bhfuil do chomhairle liostaithe"
+            },
+            "council": {
+                "title": "Sonraí na comhairle a sholáthar",
+                "data": {
+                    "url": "URL chun sonraí bailithe bin a fháil",
+                    "timeout": "An t-am i soicindí don braiteoir fanacht le haghaidh sonraí",
+                    "update_interval": "Ùine ann an uairean eadar ùrachaidhean",
+                    "uprn": "UPRN (Uimhir Tagartha Aonair Maoine)",
+                    "postcode": "Cód poist an seoladh",
+                    "number": "Uimhir tí an seoladh",
+                    "usrn": "USRN (Uimhir Tagartha Sráide Uathúil)",
+                    "web_driver": "Chun rith ar Fhreastalaí Iargúlta Selenium cuir isteach URL an Fhreastalaí Selenium",
+                    "headless": "Rith Selenium i mód gan cheann (molta)",
+                    "local_browser": "Ná rith ar fhreastalaí iargúlta Selenium, úsáid suiteáil áitiúil de Chrome ina ionad",
+                    "submit": "Cuir isteach"
+                },
+                "description": "Féach ar iontráil [wiki](https://github.com/robbrad/UKBinCollectionData/wiki/Councils) do chomhairle le haghaidh sonraí ar cad atá le cur isteach.\n{selenium_message}"
+            },
+            "reconfigure_confirm": {
+                "title": "Nuashonraigh sonraí na comhairle",
+                "data": {
+                    "url": "URL chun sonraí bailithe bin a fháil",
+                    "timeout": "An t-am i soicindí don braiteoir fanacht le haghaidh sonraí",
+                    "update_interval": "Ùine ann an uairean eadar ùrachaidhean",
+                    "uprn": "UPRN (Uimhir Tagartha Aonair Maoine)",
+                    "postcode": "Cód poist an seoladh",
+                    "number": "Uimhir tí an seoladh",
+                    "usrn": "USRN (Uimhir Tagartha Sráide Uathúil)",
+                    "web_driver": "Chun rith ar Fhreastalaí Iargúlta Selenium cuir isteach URL an Fhreastalaí Selenium",
+                    "headless": "Rith Selenium i mód gan cheann (molta)",
+                    "local_browser": "Ná rith ar fhreastalaí iargúlta Selenium, úsáid suiteáil áitiúil de Chrome ina ionad",
+                    "manual_refresh_only": "Athnuaigh an braiteoir go huathoibríoch",
+                    "icon_color_mapping": "JSON chun Cineál Bin a mhapáil do Dath agus Deilbhín féach: https://github.com/robbrad/UKBinCollectionData",
+                    "submit": "Cuir isteach"
+                },
+                "description": "Féach ar iontráil [wiki](https://github.com/robbrad/UKBinCollectionData/wiki/Councils) do chomhairle le haghaidh sonraí ar cad atá le cur isteach."
             }
-            yield {
-                "prepare_config_data": mock_prep,
-                "validate_selenium_config": mock_validate,
-            }
-
-
-async def test_options_flow_init(flow, mock_init):
-    """Test the init step of the options flow."""
-    # Run the init step
-    result = await flow.async_step_init()
-    
-    # Should call initialisation_data
-    assert mock_init.called
-    
-    # Should redirect to user step
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "user"
-
-
-async def test_options_flow_user_step(flow, mock_council_data):
-    """Test the user step of the options flow."""
-    # Initialize the flow
-    flow.data = {
-        "council_list": mock_council_data,
-        "council": "TestCouncil",
-        "original_parser": "TestCouncil",
-        "name": "Test Collection",
-    }
-    flow._initialised = True
-    
-    # Run the user step
-    result = await flow.async_step_user()
-    
-    # Check the form
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "user"
-    assert "selected_council" in result["data_schema"].schema
-    assert "use_test_data" in result["data_schema"].schema
-    
-    # Test with user input
-    user_input = {
-        "name": "Updated Collection",
-        "selected_council": "Test Council",
-        "use_test_data": True,
-    }
-    result = await flow.async_step_user(user_input)
-    
-    # Should advance to council_info step
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "council_info"
-    
-    # Check that the data was updated
-    assert flow.data["name"] == "Updated Collection"
-    assert flow.data["selected_wiki_name"] == "Test Council"
-    assert flow.data["selected_council"] == "TestCouncil"
-    assert flow.data["use_test_data"] is True
-
-
-async def test_options_flow_council_info_step(flow, mock_council_data):
-    """Test the council_info step of the options flow."""
-    # Initialize the flow
-    flow.data = {
-        "council_list": mock_council_data,
-        "selected_council": "TestCouncil",
-        "postcode": "SW1A 1AA",
-        "url": "http://example.com",
-    }
-    
-    # Run the council_info step
-    result = await flow.async_step_council_info()
-    
-    # Check the form
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "council_info"
-    
-    # Test with user input for a council that doesn't need Selenium
-    user_input = {
-        "postcode": "SW1A 1AA",
-        "url": "http://example.com",
-    }
-    result = await flow.async_step_council_info(user_input)
-    
-    # Should advance to advanced step (skipping selenium)
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "advanced"
-    
-    # Test with user input for a council that needs Selenium
-    flow.data["selected_council"] = "SeleniumCouncil"
-    user_input = {
-        "postcode": "SW1A 1AA",
-        "url": "http://example.com",
-    }
-    result = await flow.async_step_council_info(user_input)
-    
-    # Should advance to selenium step
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "selenium"
-    
-    # Test with test data
-    flow.data["selected_council"] = "TestCouncil"
-    flow.data["use_test_data"] = True
-    result = await flow.async_step_council_info()
-    
-    # Should have default values from test data
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "council_info"
-    
-    # Test with unmodified URL for council that requires modification
-    flow.data["council_list"]["TestCouncil"]["wiki_command_url_override"] = "MODIFY_ME"
-    user_input = {
-        "postcode": "SW1A 1AA",
-        "url": "MODIFY_ME",
-    }
-    result = await flow.async_step_council_info(user_input)
-    
-    # Should stay on council_info step with an error
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "council_info"
-    assert result["errors"]["base"] == "url_not_modified"
-
-
-async def test_options_flow_selenium_step(flow, mock_utils):
-    """Test the selenium step of the options flow."""
-    # Initialize the flow
-    flow.data = {
-        "selenium_status": {"http://localhost:4444/wd/hub": True},
-        "web_driver": "http://localhost:4444/wd/hub",
-    }
-    
-    # Run the selenium step
-    result = await flow.async_step_selenium()
-    
-    # Check the form
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "selenium"
-    
-    # Test with user input and successful validation
-    user_input = {
-        "web_driver": "http://localhost:4444/wd/hub",
-        "headless_mode": True,
-        "local_browser": False,
-    }
-    result = await flow.async_step_selenium(user_input)
-    
-    # Should advance to advanced step
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "advanced"
-    
-    # Test with failed validation
-    mock_utils["validate_selenium_config"].return_value = (False, "selenium_unavailable")
-    result = await flow.async_step_selenium(user_input)
-    
-    # Should stay on selenium step with an error
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "selenium"
-    assert result["errors"]["base"] == "selenium_unavailable"
-
-
-async def test_options_flow_advanced_step(flow, mock_utils):
-    """Test the advanced step of the options flow."""
-    # Run the advanced step
-    result = await flow.async_step_advanced()
-    
-    # Check the form
-    assert result["type"] == FlowResultType.FORM
-    assert result["step_id"] == "advanced"
-    
-    # Test with user input
-    user_input = {
-        "timeout": 90,
-        "update_interval": 24,
-        "automatically_refresh": False,
-        "icon_color_mapping": '{"Recycling": "green", "General Waste": "black"}',
-    }
-    result = await flow.async_step_advanced(user_input)
-    
-    # Should create the entry
-    assert result["type"] == FlowResultType.CREATE_ENTRY
-    assert "data" in result
-    
-    # Check that prepare_config_data was called with is_options_flow=True
-    mock_utils["prepare_config_data"].assert_called_once_with(user_input, is_options_flow=True)
-
-
-def test_get_advanced_defaults():
-    """Test the get_advanced_defaults function."""
-    from custom_components.uk_bin_collection.options_flow import get_advanced_defaults
-    
-    # Create a mock options flow with config entry
-    config_entry = MagicMock(
-        data={
-            "timeout": 60,
-            "update_interval": 12,
-            "manual_refresh_only": False,
-            "icon_color_mapping": "{}",
         },
-        options={
-            # Empty options
+        "error": {
+            "name": "Cuir isteach ainm suíomh le do thoil",
+            "council": "Roghnaigh comhairle le do thoil",
+            "selenium_unavailable": "❌ Níl freastalaí Selenium inrochtana. Cinntigh go bhfuil sé ag rith ag http://localhost:4444 nó http://selenium:4444. [Treoir Socraithe](https://example.com/selenium-setup)",
+            "chromium_not_found": "❌ Níl brabhsálaí Chromium suiteáilte. Suiteáil Chromium nó Google Chrome le do thoil. [Treoir Suiteála](https://example.com/chromium-install)"
         }
-    )
-    
-    options_flow = MagicMock(config_entry=config_entry)
-    
-    # Test with empty options (should use data)
-    defaults = get_advanced_defaults(options_flow)
-    assert defaults["timeout"] == 60
-    assert defaults["update_interval"] == 12
-    assert "automatically_refresh" in defaults
-    assert defaults["icon_color_mapping"] == "{}"
-    
-    # Test with options overriding data
-    config_entry.options = {
-        "timeout": 90,
-        "update_interval": 24,
-        "manual_refresh_only": True,
-        "icon_color_mapping": '{"Recycling": "green"}',
     }
-    
-    defaults = get_advanced_defaults(options_flow)
-    assert defaults["timeout"] == 90
-    assert defaults["update_interval"] == 24
-    assert "automatically_refresh" in defaults
-    assert defaults["icon_color_mapping"] == '{"Recycling": "green"}'
+}
