@@ -24,7 +24,8 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry):
         """Initialise options flow."""
-        self.config_entry = config_entry
+        # self.config_entry = config_entry # deprecated
+        
         # Initialise self.options with existing options
         self.options = dict(config_entry.options)
         
@@ -130,18 +131,6 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
             description_placeholders=description_placeholders,
         )
     
-
-        # Dynamically set the description placeholders
-        description_placeholders = {
-            "step_user_description": "Modify your bin collection configuration."
-        }
-
-        return self.async_show_form(
-            step_id="user",
-            data_schema=schema,
-            errors=errors,
-            description_placeholders=description_placeholders,
-        )
     
     async def async_step_council_info(self, user_input=None):
         """Step 2: Configure Council Information."""
@@ -249,8 +238,8 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
             self.options.update(prepare_config_data(user_input, is_options_flow=True))
             return self.async_create_entry(title="", data=self.options)
         
-        # Get defaults from current config
-        defaults = get_advanced_defaults(self.config_entry)
+        # Get defaults from current config - use self instead of passing config_entry
+        defaults = get_advanced_defaults(self)
         
         # Create schema with the defaults
         schema = build_advanced_schema(defaults)
@@ -261,8 +250,11 @@ class UkBinCollectionOptionsFlowHandler(config_entries.OptionsFlow):
         )
 
 # When loading settings for the options flow
-def get_advanced_defaults(config_entry):
+def get_advanced_defaults(options_flow):
     """Get defaults for advanced settings from the config entry."""
+    # Access the config_entry through the options_flow instance
+    config_entry = options_flow.config_entry
+    
     defaults = {
         # Map from manual_refresh_only to automatically_refresh
         # Note: They represent the same setting but with different names
