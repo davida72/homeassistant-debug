@@ -119,11 +119,14 @@ class BinCollectionConfigFlow(config_entries.ConfigFlow, domain="uk_bin_collecti
         wiki_command_url = council_data.get("wiki_command_url_override", "")
 
         if user_input is not None:
-            # Check if URL is required and hasn't been modified
-            if user_input.get("url") == wiki_command_url and wiki_command_url:
+            # Check if URL needs modification but user didn't change it
+            if (wiki_command_url and                                   # Council has a wiki_command_url
+                wiki_command_url != council_data.get("url", "") and    # wiki_command_url is different from existing council URL
+                user_input.get("url") == wiki_command_url):            # User didn't modify the pre-filled URL
+                
                 errors["base"] = "url_not_modified"
-                _LOGGER.warning("URL was not modified but is required for this council")
-            
+                _LOGGER.warning("URL was not modified but requires customization for this council")
+                
             if not errors:
                 self.data.update(user_input)
                 council_key = self.data.get("selected_council", "")

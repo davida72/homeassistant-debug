@@ -301,9 +301,16 @@ def prepare_config_data(data: dict, is_options_flow=False) -> dict:
         council_data = data.get("council_list", {}).get(council_key, {})
         url = council_data.get("url", "")
     
-    # Add URL to filtered data if we have one
+    # Add URL to filtered_data if we have one
     if url:
         filtered_data["url"] = url
+
+    # Handle skip_get_url parameter from council data
+    if council_key:
+        council_data = data.get("council_list", {}).get(council_key, {})
+        skip_get_url = council_data.get("skip_get_url")
+        if skip_get_url is not None:  # Only add it if it has an actual value
+            filtered_data["skip_get_url"] = skip_get_url
 
     # If there's an original_parser, ensure it's preserved
     if data.get("original_parser"):
