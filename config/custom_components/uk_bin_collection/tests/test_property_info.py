@@ -5,145 +5,113 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import aiohttp
 
-from custom_components.uk_bin_collection.property_info import (
-    PropertyInfo,
-    PropertyLookupError,
-    get_property_info,
+import sys
+import os
+
+# Get the parent directory (which should contain custom_components)
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../"))
+sys.path.insert(0, parent_dir)
+
+# Import the functions that actually exist in the module
+from config.custom_components.uk_bin_collection.property_info import (
+    async_get_property_info,  # This is the correct name of the function in property_info.py
+    API_KEY,  # You can also import constants
 )
 
-
+# You can create mock responses for your tests
 @pytest.fixture
 def mock_property_response():
     """Return a mock property response."""
     return {
-        "results": [
-            {
-                "uprn": "1234567890",
-                "address": "1 Test Street, Testville",
-                "postcode": "TE1 1ST"
-            }
-        ]
+        "street_name": "Test Street",
+        "admin_ward": "Test Ward",
+        "postcode": "TE1 1ST",
+        "LAD24CD": "E12345678",
+        "postal_town": "Test Town"
     }
 
-
-@pytest.fixture
-def mock_empty_response():
-    """Return a mock empty response."""
-    return {"results": []}
-
-
 @pytest.mark.asyncio
-async def test_get_property_info_success(mock_property_response):
-    """Test successful property lookup."""
-    with patch("aiohttp.ClientSession.get") as mock_get:
-        mock_response = MagicMock()
-        mock_response.status = 200
-        mock_response.json = AsyncMock(return_value=mock_property_response)
-        mock_get.return_value.__aenter__.return_value = mock_response
-        
-        result = await get_property_info("TE1 1ST", "1")
-        
-        assert result == mock_property_response["results"][0]
-        assert "uprn" in result
-        assert result["uprn"] == "1234567890"
-
-
-@pytest.mark.asyncio
-async def test_get_property_info_no_results(mock_empty_response):
-    """Test property lookup with no results."""
-    with patch("aiohttp.ClientSession.get") as mock_get:
-        mock_response = MagicMock()
-        mock_response.status = 200
-        mock_response.json = AsyncMock(return_value=mock_empty_response)
-        mock_get.return_value.__aenter__.return_value = mock_response
-        
-        with pytest.raises(PropertyLookupError, match="No properties found"):
-            await get_property_info("ZZ9 9ZZ", "999")
-
-
-@pytest.mark.asyncio
-async def test_get_property_info_http_error():
-    """Test property lookup with HTTP error."""
-    with patch("aiohttp.ClientSession.get") as mock_get:
-        mock_response = MagicMock()
-        mock_response.status = 404
-        mock_get.return_value.__aenter__.return_value = mock_response
-        
-        with pytest.raises(PropertyLookupError, match="HTTP error 404"):
-            await get_property_info("TE1 1ST", "1")
-
-
-@pytest.mark.asyncio
-async def test_get_property_info_connection_error():
-    """Test property lookup with connection error."""
-    with patch("aiohttp.ClientSession.get", side_effect=aiohttp.ClientError("Connection error")):
-        with pytest.raises(PropertyLookupError):
-            await get_property_info("TE1 1ST", "1")
-
-
-def test_property_info_class():
-    """Test PropertyInfo class."""
-    # Test initialization
-    prop_info = PropertyInfo("1234567890", "1 Test Street", "TE1 1ST")
+async def test_async_get_property_info_success(mock_property_response):
+    """Test successful property info retrieval."""
+    # Create a class to properly mock aiohttp responses with logging
+    class MockResponse:
+        def __init__(self, json_data, status):
+            self.json_data = json_data
+            self.status = status
+            
+        async def __aenter__(self):
+            return self
+            
+        async def __aexit__(self, *args):
+            pass
+            
+        async def json(self):
+            return self.json_data
     
-    assert prop_info.uprn == "1234567890"
-    assert prop_info.address == "1 Test Street"
-    assert prop_info.postcode == "TE1 1ST"
-    
-    # Test string representation
-    assert str(prop_info) == "1 Test Street, TE1 1ST (UPRN: 1234567890)"
-    
-    # Test from_dict method
-    data = {
-        "uprn": "9876543210",
-        "address": "2 Another Road",
-        "postcode": "AB1 2CD"
+    # Define response data
+    google_data = {
+        "results": [{
+            "address_components": [
+                {"types": ["postal_code"], "long_name": "TE1 1ST"},
+                {"types": ["route"], "long_name": "Test Street"},
+                {"types": ["postal_town"], "long_name": "Test Town"}
+            ]
+        }],
+        "status": "OK"
     }
     
-    prop_info2 = PropertyInfo.from_dict(data)
-    assert prop_info2.uprn == "9876543210"
-    assert prop_info2.address == "2 Another Road"
-    assert prop_info2.postcode == "AB1 2CD"
-
-
-@pytest.mark.asyncio
-async def test_get_property_info_invalid_json():
-    """Test property lookup with invalid JSON response."""
-    with patch("aiohttp.ClientSession.get") as mock_get:
-        mock_response = MagicMock()
-        mock_response.status = 200
-        mock_response.json = AsyncMock(side_effect=ValueError("Invalid JSON"))
-        mock_get.return_value.__aenter__.return_value = mock_response
-        
-        with pytest.raises(PropertyLookupError, match="Failed to parse"):
-            await get_property_info("TE1 1ST", "1")
-
-
-def test_property_info_missing_fields():
-    """Test PropertyInfo with missing fields."""
-    # Test partial data
-    partial_data = {
-        "uprn": "1234567890",
-        # Missing address and postcode
+    postcodes_data = {
+        "status": 200,
+        "result": {
+            "admin_ward": "Test Ward",
+            "codes": {"admin_district": "E12345678"}
+        }
     }
     
-    prop_info = PropertyInfo.from_dict(partial_data)
-    assert prop_info.uprn == "1234567890"
-    assert prop_info.address == ""  # Should default to empty string
-    assert prop_info.postcode == ""  # Should default to empty string
+    # Create mock session class that properly implements context manager
+    class MockClientSession:
+        async def __aenter__(self):
+            return self
+            
+        async def __aexit__(self, *args):
+            pass
+            
+        # Make get a regular method that returns a response object, not a coroutine
+        def get(self, url, **kwargs):
+            if "maps.googleapis.com" in url:
+                return MockResponse(google_data, 200)
+            else:  # postcodes.io
+                return MockResponse(postcodes_data, 200)
+    
+    # Apply patch to aiohttp.ClientSession to return our mock
+    with patch('aiohttp.ClientSession', return_value=MockClientSession()):
+        # Call the function
+        result = await async_get_property_info(51.5074, -0.1278)
+        
+        # Assert expected result
+        assert result == mock_property_response
 
-
-def test_property_info_equality():
-    """Test PropertyInfo equality comparison."""
-    prop1 = PropertyInfo("1234567890", "Test Address", "TE1 1ST")
-    prop2 = PropertyInfo("1234567890", "Test Address", "TE1 1ST")
-    prop3 = PropertyInfo("9876543210", "Other Address", "OT1 1ST")
-    
-    # Same data should be equal
-    assert prop1 == prop2
-    
-    # Different data should not be equal
-    assert prop1 != prop3
-    
-    # Different type should not be equal
-    assert prop1 != "not a PropertyInfo object"
+@pytest.mark.asyncio
+async def test_async_get_property_info_google_error():
+    """Test handling of Google API errors."""
+    with patch("aiohttp.ClientSession") as mock_session:
+        mock_response = AsyncMock()
+        mock_response.status = 400
+        mock_response.__aenter__.return_value = mock_response
+        
+        mock_session.return_value.get = AsyncMock(return_value=mock_response)
+        
+        with patch('logging.Logger.warning') as mock_warning, \
+             patch('logging.Logger.error') as mock_error:
+            
+            # Call the function
+            result = await async_get_property_info(51.5074, -0.1278)
+            
+            # Check if any warnings or errors were logged
+            if mock_warning.called:
+                print(f"Warning logged: {mock_warning.call_args}")
+            if mock_error.called:
+                print(f"Error logged: {mock_error.call_args}")
+        
+        # Assert expected result for error condition
+        assert result is None
